@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "TVP",
+  "version": "1.0.0",
+  "description": "TVING Watch Party",
+
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+
+  "host_permissions": [
+    "https://www.tving.com/*",
+    "http://localhost:3000/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.tving.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "panel.html",
+        "panel.css",
+        "panel.js",
+        "socket.io.min.js"
+      ],
+      "matches": [
+        "https://www.tving.com/*"
+      ]
+    }
+  ]
+}

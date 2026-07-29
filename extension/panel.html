@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>TVP</title>
+
+    <link
+        rel="stylesheet"
+        href="panel.css"
+    >
+</head>
+
+<body>
+    <main class="tvp-panel">
+        <header class="tvp-header">
+            <div class="tvp-logo">
+                <span class="tvp-logo-icon">
+                    ▶
+                </span>
+
+                <span class="tvp-logo-text">
+                    TVP
+                </span>
+            </div>
+
+            <div class="tvp-header-buttons">
+                <button
+                    id="tvp-collapse-button"
+                    class="tvp-icon-button"
+                    type="button"
+                    title="접기"
+                >
+                    ›
+                </button>
+
+                <button
+                    id="tvp-close-button"
+                    class="tvp-icon-button"
+                    type="button"
+                    title="닫기"
+                >
+                    ×
+                </button>
+            </div>
+        </header>
+
+        <div class="tvp-content">
+            <section
+                id="join-section"
+                class="tvp-join-section"
+            >
+                <h2 class="tvp-join-title">
+                    같이 볼 방에 참가하기
+                </h2>
+
+                <p class="tvp-join-description">
+                    방 코드를 입력하거나 새 방을 만드세요.
+                </p>
+
+                <label
+    class="tvp-form-label"
+    for="server-url-input"
+>
+    서버 주소
+</label>
+
+<input
+    id="server-url-input"
+    class="tvp-form-input"
+    type="url"
+    placeholder="https://xxxxx.trycloudflare.com"
+    autocomplete="off"
+>
+
+                <label
+                    class="tvp-form-label"
+                    for="room-input"
+                >
+                    방 코드
+                </label>
+
+                <input
+                    id="room-input"
+                    class="tvp-form-input"
+                    type="text"
+                    maxlength="12"
+                    placeholder="예: ABC123"
+                    autocomplete="off"
+                >
+
+                <label
+                    class="tvp-form-label"
+                    for="nickname-input"
+                >
+                    닉네임
+                </label>
+
+                <input
+                    id="nickname-input"
+                    class="tvp-form-input"
+                    type="text"
+                    maxlength="20"
+                    placeholder="닉네임"
+                    autocomplete="off"
+                >
+
+                <button
+                    id="join-button"
+                    class="tvp-primary-button"
+                    type="button"
+                >
+                    방 참가
+                </button>
+
+                <button
+                    id="create-room-button"
+                    class="tvp-secondary-button"
+                    type="button"
+                >
+                    새 방 만들기
+                </button>
+
+                <p
+                    id="connection-status"
+                    class="tvp-connection-status"
+                >
+                    서버 연결 중…
+                </p>
+            </section>
+
+            <section
+                id="room-section"
+                class="tvp-room-section"
+                hidden
+            >
+                <section class="tvp-section">
+                    <div class="tvp-section-row">
+                        <div>
+                            <div class="tvp-label">
+                                방 코드
+                            </div>
+
+                            <strong
+                                id="room-code"
+                                class="tvp-room-code"
+                            >
+                                -
+                            </strong>
+                        </div>
+
+                        <button
+                            id="copy-button"
+                            class="tvp-copy-button"
+                            type="button"
+                        >
+                            복사
+                        </button>
+                    </div>
+
+                    <div
+                        id="host-status"
+                        class="tvp-host-status"
+                    >
+                        참가자
+                    </div>
+                </section>
+
+                <section class="tvp-section">
+                    <div class="tvp-section-title">
+                        참가자
+                        <span
+                            id="participant-count"
+                            class="tvp-participant-count"
+                        >
+                            0
+                        </span>
+                    </div>
+
+                    <ul
+                        id="participant-list"
+                        class="tvp-participant-list"
+                    ></ul>
+                </section>
+
+                <section
+                    id="chat-section"
+                    class="tvp-chat-section"
+                >
+                    <div
+                        id="empty-chat"
+                        class="tvp-empty-chat"
+                    >
+                        <div class="tvp-empty-chat-icon">
+                            💬
+                        </div>
+
+                        <div class="tvp-empty-chat-title">
+                            아직 메시지가 없습니다
+                        </div>
+
+                        <div class="tvp-empty-chat-description">
+                            같이 보는 사람에게<br>
+                            메시지를 보내 보세요.
+                        </div>
+                    </div>
+
+                    <ul
+                        id="message-list"
+                        class="tvp-message-list"
+                    ></ul>
+                </section>
+
+                <section class="tvp-input-section">
+                    <div class="tvp-input-box">
+                        <input
+                            id="message-input"
+                            class="tvp-message-input"
+                            type="text"
+                            placeholder="메시지를 입력하세요"
+                            autocomplete="off"
+                        >
+
+                        <button
+                            id="send-button"
+                            class="tvp-send-button"
+                            type="button"
+                            title="전송"
+                        >
+                            ↑
+                        </button>
+                    </div>
+                </section>
+            </section>
+        </div>
+
+        <button
+            id="tvp-expand-button"
+            class="tvp-expand-button"
+            type="button"
+        >
+            <span>▶</span>
+            <span class="tvp-expand-arrow">
+                ‹
+            </span>
+        </button>
+    </main>
+
+    <script src="socket.io.min.js"></script>
+    <script src="panel.js"></script>
+</body>
+</html>

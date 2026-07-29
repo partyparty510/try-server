@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>TVP</title>
+</head>
+
+<body>
+    <h1>TVP</h1>
+
+    <!-- 방 입장 화면 -->
+    <section id="joinSection">
+        <h2>방 참가</h2>
+
+        <input
+            id="roomInput"
+            type="text"
+            placeholder="방 코드"
+            autocomplete="off"
+        >
+
+        <input
+            id="nicknameInput"
+            type="text"
+            placeholder="닉네임"
+            autocomplete="off"
+        >
+
+        <button id="joinButton">
+            방 참가
+        </button>
+    </section>
+
+    <!-- 방 내부 화면 -->
+    <section id="roomSection" hidden>
+        <h2>
+            방 코드:
+            <span id="currentRoomText"></span>
+        </h2>
+
+        <h3>
+            참가자
+            (<span id="participantCount">0</span>)
+        </h3>
+
+        <ul id="participantList"></ul>
+
+        <hr>
+
+        <h3>채팅</h3>
+
+        <ul id="messages"></ul>
+
+        <input
+            id="messageInput"
+            type="text"
+            placeholder="메시지를 입력하세요"
+            autocomplete="off"
+        >
+
+        <button id="sendButton">
+            전송
+        </button>
+    </section>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        const socket = io();
+
+        const joinSection =
+            document.getElementById("joinSection");
+
+        const roomSection =
+            document.getElementById("roomSection");
+
+        const roomInput =
+            document.getElementById("roomInput");
+
+        const nicknameInput =
+            document.getElementById("nicknameInput");
+
+        const joinButton =
+            document.getElementById("joinButton");
+
+        const currentRoomText =
+            document.getElementById("currentRoomText");
+
+        const participantCount =
+            document.getElementById("participantCount");
+
+        const participantList =
+            document.getElementById("participantList");
+
+        const messages =
+            document.getElementById("messages");
+
+        const messageInput =
+            document.getElementById("messageInput");
+
+        const sendButton =
+            document.getElementById("sendButton");
+
+        let currentRoomCode = "";
+
+        socket.on("connect", () => {
+            console.log("서버 연결 성공:", socket.id);
+        });
+
+        function addSystemMessage(message) {
+            const item = document.createElement("li");
+
+            item.textContent = `[안내] ${message}`;
+
+            messages.appendChild(item);
+        }
+
+        function joinRoom() {
+            const roomCode = roomInput.value
+                .trim()
+                .toUpperCase();
+
+            const nickname = nicknameInput.value.trim();
+
+            if (!roomCode) {
+                alert("방 코드를 입력하세요.");
+                roomInput.focus();
+                return;
+            }
+
+            if (!nickname) {
+                alert("닉네임을 입력하세요.");
+                nicknameInput.focus();
+                return;
+            }
+
+            socket.emit(
+                "join room",
+                {
+                    roomCode: roomCode,
+                    nickname: nickname
+                },
+                (response) => {
+                    if (!response.success) {
+                        alert(response.message);
+                        return;
+                    }
+
+                    currentRoomCode = response.roomCode;
+
+                    joinSection.hidden = true;
+                    roomSection.hidden = false;
+
+                    currentRoomText.textContent =
+                        currentRoomCode;
+
+                    if (response.isHost) {
+                        addSystemMessage(
+                            "방을 만들었습니다. 당신이 HOST입니다."
+                        );
+                    } else {
+                        addSystemMessage(
+                            `${currentRoomCode} 방에 참가했습니다.`
+                        );
+                    }
+
+                    messageInput.focus();
+                }
+            );
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+
+            if (!message) {
+                return;
+            }
+
+            socket.emit("chat message", {
+                message: message
+            });
+
+            messageInput.value = "";
+            messageInput.focus();
+        }
+
+        joinButton.addEventListener("click", joinRoom);
+
+        roomInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                nicknameInput.focus();
+            }
+        });
+
+        nicknameInput.addEventListener(
+            "keydown",
+            (event) => {
+                if (event.key === "Enter") {
+                    joinRoom();
+                }
+            }
+        );
+
+        sendButton.addEventListener(
+            "click",
+            sendMessage
+        );
+
+        messageInput.addEventListener(
+            "keydown",
+            (event) => {
+                if (event.key === "Enter") {
+                    sendMessage();
+                }
+            }
+        );
+
+        socket.on("participant list", (participants) => {
+            participantList.innerHTML = "";
+
+            participantCount.textContent =
+                participants.length;
+
+            participants.forEach((participant) => {
+                const item =
+                    document.createElement("li");
+
+                if (participant.isHost) {
+                    item.textContent =
+                        `🟢 ${participant.nickname} (HOST)`;
+                } else {
+                    item.textContent =
+                        `🟢 ${participant.nickname}`;
+                }
+
+                participantList.appendChild(item);
+            });
+        });
+
+        socket.on("chat message", (data) => {
+            const item = document.createElement("li");
+
+            item.textContent =
+                `${data.nickname}: ${data.message}`;
+
+            messages.appendChild(item);
+        });
+
+        socket.on("system message", (data) => {
+            addSystemMessage(data.message);
+        });
+    </script>
+</body>
+</html>
