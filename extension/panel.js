@@ -7,29 +7,9 @@
     }
 
 const DEFAULT_SERVER_URL =
-    "";
+"https://try-server-5rp4.onrender.com";
 
-const serverUrlInput =
-    document.getElementById("server-url-input");
 
-let savedServerUrl =
-    localStorage.getItem("tvp-server-url");
-
-if (
-    savedServerUrl &&
-    savedServerUrl.includes("bios-configurations-pride-queries")
-) {
-    localStorage.removeItem("tvp-server-url");
-    savedServerUrl = "";
-}
-
-    console.log("savedServerUrl =", savedServerUrl);
-
-if (savedServerUrl) {
-    serverUrlInput.value = savedServerUrl;
-} else {
-    serverUrlInput.value = DEFAULT_SERVER_URL;
-}
 
     const joinSection = document.getElementById("join-section");
     const roomSection = document.getElementById("room-section");
@@ -283,17 +263,7 @@ if (savedServerUrl) {
 
         return;
     }
-
-const serverUrl = serverUrlInput.value
-    .trim()
-    .replace(/\/+$/, "");
-
-if (!serverUrl) {
-    setStatus("서버 주소를 입력하세요.", true);
-    return;
-}
-
-localStorage.setItem("tvp-server-url", serverUrl);
+const serverUrl = DEFAULT_SERVER_URL;
 
 if (socket) {
     socket.disconnect();
@@ -391,10 +361,10 @@ copyButton.addEventListener("click", () => {
     }
 
     window.parent.postMessage(
-    {
-        type: "TVP_REQUEST_INVITE_LINK",
-        roomCode: currentRoom,
-        serverUrl: serverUrlInput.value.trim().replace(/\/+$/, "")
+{
+    type: "TVP_REQUEST_INVITE_LINK",
+    roomCode: currentRoom
+
     },
     "*"
 );
@@ -475,10 +445,7 @@ window.addEventListener("message", async (event) => {
     if (type === "TVP_INVITE_ROOM_FOUND") {
     roomInput.value = event.data.roomCode;
 
-    if (event.data.serverUrl) {
-        serverUrlInput.value = event.data.serverUrl;
-        localStorage.setItem("tvp-server-url", event.data.serverUrl);
-    }
+
 }
 });
 

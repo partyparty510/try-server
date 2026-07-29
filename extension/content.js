@@ -775,31 +775,24 @@ if (type === "TVP_REQUEST_INVITE_ROOM") {
     const roomCode = new URL(window.location.href)
         .searchParams.get("tvpRoom");
 
-    const serverUrl = new URL(window.location.href)
-        .searchParams.get("tvpServer");
-
-    if (roomCode) {
-        postToPanel({
-            type: "TVP_INVITE_ROOM_FOUND",
-            roomCode,
-            serverUrl
-        });
-    }
+if (roomCode) {
+    postToPanel({
+        type: "TVP_INVITE_ROOM_FOUND",
+        roomCode
+    });
+}
 
     return;
 }
                 
 if (type === "TVP_REQUEST_INVITE_LINK") {
 const roomCode = event.data.roomCode;
-const serverUrl = event.data.serverUrl;
 
 const inviteUrl = new URL(window.location.href);
 
 inviteUrl.searchParams.set("tvpRoom", roomCode);
 
-if (serverUrl) {
-    inviteUrl.searchParams.set("tvpServer", serverUrl);
-}
+
 
     postToPanel({
         type: "TVP_INVITE_LINK_READY",
