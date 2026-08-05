@@ -241,7 +241,7 @@ button {
     padding: 0;
     border: 0;
     border-radius: 9px;
-    background: #6546d7;
+    background: #123478;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -340,7 +340,7 @@ body.tvp-collapsed .tvp-expand-button {
 
 .tvp-primary-button {
     border: 0;
-    background: #6546d7;
+    background: #123478;
     color: #ffffff;
     font-weight: 700;
 }
@@ -406,7 +406,7 @@ body.tvp-collapsed .tvp-expand-button {
     margin-left: auto;
     padding: 2px 6px;
     border-radius: 5px;
-    background: #6546d7;
+    background: #123478;
     color: #ffffff;
     font-size: 9px;
     font-weight: 800;
@@ -443,12 +443,104 @@ body.tvp-collapsed .tvp-expand-button {
 }
 
 .tvp-my-message .tvp-message-text {
-    background: #6546d7;
+    background: #123478;
 }
 
 .tvp-system-message {
     color: #777777;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.5;
     text-align: center;
+}
+
+.tvp-participant-button {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    background: #222222;
+    color: #ffffff;
+    cursor: pointer;
+    text-align: left;
+}
+
+.tvp-participant-popup {
+    position: absolute;
+    right: 18px;
+    top: 110px;
+    width: 220px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: 10px;
+    background: #252525;
+    border: 1px solid #3d3d3d;
+    z-index: 10;
+}
+
+.chat-message-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+}
+
+.chat-message-emoji {
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 30px;
+    line-height: 1;
+
+    user-select: none;
+}
+
+.chat-message-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    min-width: 0;
+    max-width: calc(100% - 52px);
+}
+
+.chat-message-nickname {
+    margin: 0 0 5px 3px;
+
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+
+    color: #b8b8c2;
+}
+
+.chat-message-bubble{
+    display:inline-block;
+
+    padding:10px 14px;
+
+    border-radius:7px 16px 16px 16px;
+
+    color:white;
+
+    font-size:13px;
+
+    line-height:1.45;
+
+    white-space:pre-wrap;
+
+    word-break:break-word;
+
+    box-sizing:border-box;
+
+    min-height:18px;
+
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
 }

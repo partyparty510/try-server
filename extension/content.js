@@ -98,12 +98,12 @@
         );
     }
 
-    function findVideo() {
-        return document.querySelector(
-            'video[id^="tving-player-"], ' +
-            '[data-testid="player-video-root"] video'
-        );
-    }
+function findVideo() {
+    return document.querySelector(
+        'video[id^="tving-player-"], ' +
+        '[data-testid="player-video-root"] video'
+    );
+}
 
     function postToPanel(message) {
         frame?.contentWindow?.postMessage(
@@ -357,17 +357,49 @@
         });
     }
 
-    function handleVideoPlay() {
-        emitHostPlayerEvent("play");
-    }
+function handleVideoPlay() {
+    emitHostPlayerEvent("play");
 
-    function handleVideoPause() {
-        emitHostPlayerEvent("pause");
-    }
+    postToPanel({
+        type: "TVP_SYSTEM_MESSAGE",
+        message: "재생"
+    });
+}
 
-    function handleVideoSeeked() {
-        emitHostPlayerEvent("seek");
+function handleVideoPause() {
+    emitHostPlayerEvent("pause");
+
+    postToPanel({
+        type: "TVP_SYSTEM_MESSAGE",
+        message: "일시정지"
+    });
+}
+
+function handleVideoSeeked() {
+    emitHostPlayerEvent("seek");
+
+    const video = currentVideo;
+
+    if (video) {
+        const seconds = Math.floor(
+            video.currentTime
+        );
+
+        const min = Math.floor(
+            seconds / 60
+        );
+
+        const sec = String(
+            seconds % 60
+        ).padStart(2, "0");
+
+        postToPanel({
+            type: "TVP_SYSTEM_MESSAGE",
+            message:
+                `${min}:${sec}로 이동`
+        });
     }
+}
 
     function detachVideoEvents() {
         if (!currentVideo) {
@@ -498,24 +530,23 @@
                 );
         }
 
-        if (
-            action === "seek" ||
-            action === "sync" ||
-            timeDifference > 0.75
-        ) {
-            try {
-                video.currentTime =
-                    Math.max(
-                        0,
-                        adjustedTime
-                    );
-            } catch (error) {
-                console.warn(
-                    "TVP 시간 이동 실패:",
-                    error
-                );
-            }
-        }
+if (
+    action === "seek" ||
+    timeDifference > 1.5
+) {
+    try {
+        video.currentTime =
+            Math.max(
+                0,
+                adjustedTime
+            );
+    } catch (error) {
+        console.warn(
+            "TVP 시간 이동 실패:",
+            error
+        );
+    }
+}
 
         if (
             Number.isFinite(
@@ -663,6 +694,24 @@
             "2147483647",
             "important"
         );
+        
+        frame.style.setProperty(
+    "isolation",
+    "isolate",
+    "important"
+);
+
+frame.style.setProperty(
+    "transform",
+    "translateZ(0)",
+    "important"
+);
+
+frame.style.setProperty(
+    "will-change",
+    "transform",
+    "important"
+);
 
         frame.style.setProperty(
             "pointer-events",
@@ -676,10 +725,10 @@
             "important"
         );
 
-        document.documentElement
-            .appendChild(frame);
+document.body.appendChild(frame);
 
         panelWidth = PANEL_WIDTH;
+
 
         attachVideoEvents();
         updatePlayerScale();
@@ -732,30 +781,72 @@
         detachVideoEvents();
         restorePlayer();
     }
+    
+const observer =
+    new MutationObserver(() => {
+        if (findVideo()) {
+            createPanel();
+            attachVideoEvents();
+            scheduleScaleUpdate();
 
-    const observer =
-        new MutationObserver(() => {
-            if (findVideo()) {
-                createPanel();
-                attachVideoEvents();
-                scheduleScaleUpdate();
-            } else if (frame) {
-                removePanel();
+            if (
+                document.body.classList.contains(
+                    "fullscreen"
+                )
+            ) {
+                frame?.style.setProperty(
+                    "display",
+                    "block",
+                    "important"
+                );
             }
-        });
+
+        } else if (frame) {
+            removePanel();
+        }
+    });
 
     observer.observe(
         document.documentElement,
         {
-            childList: true,
-            subtree: true
-        }
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class"]
+        }   
     );
 
     window.addEventListener(
         "resize",
         scheduleScaleUpdate
     );
+
+    document.addEventListener(
+    "fullscreenchange",
+    () => {
+        setTimeout(() => {
+            if (frame) {
+                frame.style.setProperty(
+                    "display",
+                    "block",
+                    "important"
+                );
+
+                frame.style.setProperty(
+                    "position",
+                    "fixed",
+                    "important"
+                );
+
+                frame.style.setProperty(
+                    "z-index",
+                    "2147483647",
+                    "important"
+                );
+            }
+        }, 300);
+    }
+);
 
     window.addEventListener(
         "message",
@@ -811,7 +902,8 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
                 setPanelWidth(
                     COLLAPSED_WIDTH
                 );
-
+                
+                
                 return;
             }
 
@@ -825,6 +917,7 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
                     PANEL_WIDTH
                 );
 
+                
                 return;
             }
 

@@ -26,6 +26,97 @@ rooms["ABC123"] = [
 ];
 */
 const rooms = {};
+console.log("✅ 새 이모지 서버 코드 실행됨");
+const TVP_EMOJIS = [
+    "🤔",
+    "🥰",
+    "🥺",
+    "🤦",
+    "😶‍🌫️",
+    "👀",
+    "😯",
+    "🤗",
+    "🫡",
+    "🤬",
+    "🫣",
+    "🤭",
+    "😞",
+    "🫠",
+    "😗"
+];
+
+const TVP_COLORS = [
+    // Red
+    "#7A1E2C",
+    "#6B2A2A",
+
+    // Orange
+    "#8A4B2A",
+    "#7B4F33",
+
+    // Yellow / Gold
+    "#8A742A",
+    "#7D6A2C",
+
+    // Green
+    "#2E6B4A",
+    "#3A704E",
+
+    // Blue
+    "#2B4C7E",
+    "#305F72",
+
+    // Navy
+    "#243B5A",
+    "#354B63",
+
+    // Purple
+    "#6A4C93",
+    "#5E4B8B",
+];
+
+function getRandomItem(array) {
+    return array[
+        Math.floor(
+            Math.random() * array.length
+        )
+    ];
+}
+
+function getUnusedItem(items, usedItems) {
+    const unusedItems = items.filter(
+        (item) => !usedItems.includes(item)
+    );
+
+    if (unusedItems.length > 0) {
+        return getRandomItem(unusedItems);
+    }
+
+    return getRandomItem(items);
+}
+
+function createParticipantStyle(roomCode) {
+    const participants = rooms[roomCode] || [];
+
+    const usedEmojis = participants
+        .map((participant) => participant.emoji)
+        .filter(Boolean);
+
+    const usedColors = participants
+        .map((participant) => participant.color)
+        .filter(Boolean);
+
+    return {
+        emoji: getUnusedItem(
+            TVP_EMOJIS,
+            usedEmojis
+        ),
+        color: getUnusedItem(
+            TVP_COLORS,
+            usedColors
+        )
+    };
+}
 
 app.use(express.static("public"));
 
@@ -112,16 +203,23 @@ io.on("connection", (socket) => {
             return;
         }
 
-        const isHost =
-            rooms[roomCode].length === 0;
+const isHost =
+    rooms[roomCode].length === 0;
 
-        const participant = {
-            socketId: socket.id,
-            nickname,
-            isHost
-        };
+const participantStyle =
+    createParticipantStyle(roomCode);
 
-        rooms[roomCode].push(participant);
+const participant = {
+    socketId: socket.id,
+    nickname,
+    isHost,
+    emoji: participantStyle.emoji,
+    color: participantStyle.color
+};
+
+console.log("🎨 참가자 배정:", participant);
+
+rooms[roomCode].push(participant);
 
         socket.join(roomCode);
 
@@ -168,37 +266,83 @@ io.on("connection", (socket) => {
         );
     });
 
-    /*
-     * 채팅
-     */
-    socket.on("chat message", (data) => {
-        const roomCode =
-            socket.data.roomCode;
+/*
+ * 채팅
+ */
+socket.on("chat message", (data) => {
+    const roomCode =
+        socket.data.roomCode;
 
-        const nickname =
-            socket.data.nickname;
+    const nickname =
+        socket.data.nickname;
 
-        const message = String(
-            data?.message || ""
-        ).trim();
+    const message = String(
+        data?.message || ""
+    ).trim();
 
-        if (
-            !roomCode ||
-            !nickname ||
-            !message
-        ) {
-            return;
-        }
+    if (
+        !roomCode ||
+        !nickname ||
+        !message
+    ) {
+        return;
+    }
 
-        io.to(roomCode).emit(
-            "chat message",
-            {
-                nickname,
-                message,
-                socketId: socket.id
-            }
+    const participant =
+        rooms[roomCode]?.find(
+            (item) =>
+                item.socketId === socket.id
         );
-    });
+
+    if (!participant) {
+        return;
+    }
+
+    /*
+     * 기존 참가자에게 이모지나 색상이 없는 경우
+     * 여기서 새로 배정한다.
+     */
+    if (
+        !participant.emoji ||
+        !participant.color
+    ) {
+        const participantStyle =
+            createParticipantStyle(roomCode);
+
+        participant.emoji =
+            participantStyle.emoji;
+
+        participant.color =
+            participantStyle.color;
+    }
+
+    console.log("💬 채팅 전송:", {
+    nickname: participant.nickname,
+    message,
+    emoji: participant.emoji,
+    color: participant.color
+});
+
+
+    io.to(roomCode).emit(
+        "chat message",
+        {
+            nickname:
+                participant.nickname,
+
+            message,
+
+            socketId:
+                participant.socketId,
+
+            emoji:
+                participant.emoji,
+
+            color:
+                participant.color
+        }
+    );
+});
 
     /*
      * 호스트 재생 이벤트 전달

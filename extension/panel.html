@@ -158,22 +158,29 @@
                     </div>
                 </section>
 
-                <section class="tvp-section">
-                    <div class="tvp-section-title">
-                        참가자
-                        <span
-                            id="participant-count"
-                            class="tvp-participant-count"
-                        >
-                            0
-                        </span>
-                    </div>
+                <section class="tvp-section tvp-participant-section">
+    <button
+        id="participant-button"
+        class="tvp-participant-button"
+        type="button"
+    >
+        👥 참가자
+        <span id="participant-count">
+            0
+        </span>
+    </button>
 
-                    <ul
-                        id="participant-list"
-                        class="tvp-participant-list"
-                    ></ul>
-                </section>
+    <div
+        id="participant-popup"
+        class="tvp-participant-popup"
+        hidden
+    >
+        <ul
+            id="participant-list"
+            class="tvp-participant-list"
+        ></ul>
+    </div>
+</section>
 
                 <section
                     id="chat-section"

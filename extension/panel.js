@@ -7,7 +7,7 @@
     }
 
 const DEFAULT_SERVER_URL =
-"https://try-server-5rp4.onrender.com";
+"https://beneficial-cube-unknown-butterfly.trycloudflare.com";
 
 
 
@@ -26,6 +26,9 @@ const DEFAULT_SERVER_URL =
 
     const participantCount = document.getElementById("participant-count");
     const participantList = document.getElementById("participant-list");
+
+const participantButton = document.getElementById("participant-button");
+const participantPopup = document.getElementById("participant-popup");
 
     const emptyChat = document.getElementById("empty-chat");
     const messageList = document.getElementById("message-list");
@@ -78,37 +81,92 @@ const DEFAULT_SERVER_URL =
         item.textContent = text;
 
         messageList.appendChild(item);
-        item.scrollIntoView({ block: "end" });
+        messageList.parentElement.scrollTop =
+    messageList.parentElement.scrollHeight;
     }
 
-    function showChatMessage(data) {
-        if (!data || !data.message) {
-            return;
-        }
+function showChatMessage(data) {
+    const messageList =
+        document.getElementById("message-list");
 
-        emptyChat.hidden = true;
+    const emptyChat =
+        document.getElementById("empty-chat");
 
-        const item = document.createElement("li");
-        item.className = "tvp-message-item";
-
-        if (data.nickname === currentNickname) {
-            item.classList.add("tvp-my-message");
-        }
-
-        const name = document.createElement("div");
-        name.className = "tvp-message-name";
-        name.textContent = data.nickname || "익명";
-
-        const text = document.createElement("div");
-        text.className = "tvp-message-text";
-        text.textContent = data.message;
-
-        item.appendChild(name);
-        item.appendChild(text);
-
-        messageList.appendChild(item);
-        item.scrollIntoView({ block: "end" });
+    if (!messageList) {
+        return;
     }
+
+    if (emptyChat) {
+        emptyChat.style.display = "none";
+    }
+
+    const messageRow =
+        document.createElement("li");
+
+    messageRow.className =
+        "chat-message-row";
+
+    const emojiElement =
+        document.createElement("div");
+
+    emojiElement.className =
+        "chat-message-emoji";
+
+    emojiElement.textContent =
+        data.emoji || "🙂";
+
+    const messageContent =
+        document.createElement("div");
+
+    messageContent.className =
+        "chat-message-content";
+
+    const nicknameElement =
+        document.createElement("div");
+
+    nicknameElement.className =
+        "chat-message-nickname";
+
+    nicknameElement.textContent =
+        data.nickname || "알 수 없음";
+
+    const messageBubble =
+        document.createElement("div");
+
+    messageBubble.className =
+        "chat-message-bubble";
+
+    messageBubble.textContent =
+        data.message || "";
+
+    if (data.color) {
+        messageBubble.style.backgroundColor =
+            data.color;
+    }
+
+    messageContent.appendChild(
+        nicknameElement
+    );
+
+    messageContent.appendChild(
+        messageBubble
+    );
+
+    messageRow.appendChild(
+        emojiElement
+    );
+
+    messageRow.appendChild(
+        messageContent
+    );
+
+    messageList.appendChild(
+        messageRow
+    );
+
+    messageList.scrollTop =
+        messageList.scrollHeight;
+}
 
     function renderParticipants(participants) {
         participantList.innerHTML = "";
@@ -304,6 +362,39 @@ socket = io(serverUrl, {
         },
         "*"
     );
+
+    if (data.action === "play") {
+        showSystemMessage(
+            "재생"
+        );
+    }
+
+    if (data.action === "pause") {
+        showSystemMessage(
+            "일시정지"
+        );
+    }
+
+    if (data.action === "seek") {
+        const seconds = Math.floor(
+            data.time
+        );
+
+        const min = Math.floor(
+            seconds / 60
+        );
+
+        const sec = String(
+            seconds % 60
+        ).padStart(
+            2,
+            "0"
+        );
+
+        showSystemMessage(
+            `${min}:${sec}로 이동`
+        );
+    }
 });
 
 socket.on("player state requested", (data) => {
@@ -353,7 +444,17 @@ socket.on("system message", (data) => {
 
     joinButton.addEventListener("click", joinRoom);
     createRoomButton.addEventListener("click", createRoom);
-    sendButton.addEventListener("click", sendMessage);
+    sendButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    sendMessage();
+});
+
+messageInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+});
 
 copyButton.addEventListener("click", () => {
     if (!currentRoom) {
@@ -399,12 +500,28 @@ copyButton.addEventListener("click", () => {
     );
 });
 
+participantButton.addEventListener(
+    "click",
+    () => {
+        participantPopup.hidden =
+            !participantPopup.hidden;
+    }
+);
+
 window.addEventListener("message", async (event) => {
     if (event.source !== window.parent) {
         return;
     }
 
     const type = event.data?.type;
+
+    if (type === "TVP_SYSTEM_MESSAGE") {
+    showSystemMessage(
+        event.data.message
+    );
+
+    return;
+}
 
     if (type === "TVP_LOCAL_PLAYER_EVENT") {
         if (!socket?.connected || !currentRoom) {
