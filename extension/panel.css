@@ -58,7 +58,8 @@ button {
 }
 
 .tvp-logo-icon {
-    font-size: 19px;
+    font-size: 14px;
+     white-space: nowrap;
 }
 
 .tvp-logo-text {
@@ -524,7 +525,7 @@ body.tvp-collapsed .tvp-expand-button {
 .chat-message-bubble{
     display:inline-block;
 
-    padding:10px 14px;
+    padding:7px 14px;
 
     border-radius:7px 16px 16px 16px;
 
@@ -543,4 +544,27 @@ body.tvp-collapsed .tvp-expand-button {
     min-height:18px;
 
     box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+
+/* 내가 보낸 채팅 */
+.chat-message-row--mine {
+    flex-direction: row-reverse;
+}
+
+/* 내 채팅의 내용 영역 */
+.chat-message-row--mine .chat-message-content {
+    align-items: flex-end;
+}
+
+/* 내 닉네임 */
+.chat-message-row--mine .chat-message-nickname {
+    margin-left: 0;
+    margin-right: 3px;
+    text-align: right;
+}
+
+/* 내 말풍선 */
+.chat-message-row--mine .chat-message-bubble {
+    border-radius: 16px 7px 16px 16px;
+    text-align: left;
 }

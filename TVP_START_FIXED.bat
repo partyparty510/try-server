@@ -30,6 +30,4 @@ start "TVP Cloudflare Tunnel" cmd /k "cd /d C:\cloudflared && cloudflared.exe tu
 
 timeout /t 2 /nobreak >nul
 
-start "" "https://www.tving.com"
-
 exit

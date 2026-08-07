@@ -14,13 +14,17 @@ const DEFAULT_SERVER_URL =
     const joinSection = document.getElementById("join-section");
     const roomSection = document.getElementById("room-section");
 
-    const roomInput = document.getElementById("room-input");
+    const roomTitleInput =
+    document.getElementById(
+        "room-title-input"
+    );
     const nicknameInput = document.getElementById("nickname-input");
     const joinButton = document.getElementById("join-button");
     const createRoomButton = document.getElementById("create-room-button");
     const connectionStatus = document.getElementById("connection-status");
 
-    const roomCode = document.getElementById("room-code");
+    const roomTitle =
+    document.getElementById("room-title");
     const copyButton = document.getElementById("copy-button");
     const hostStatus = document.getElementById("host-status");
 
@@ -42,6 +46,7 @@ const participantPopup = document.getElementById("participant-popup");
     let socket;
     let currentRoom = "";
     let currentNickname = "";
+    let inviteRoomCode = "";
 
     function showJoinScreen() {
         joinSection.hidden = false;
@@ -62,7 +67,7 @@ const participantPopup = document.getElementById("participant-popup");
         const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         let result = "";
 
-        for (let index = 0; index < 6; index += 1) {
+        for (let index = 0; index < 4; index += 1) {
             const randomIndex = Math.floor(
                 Math.random() * characters.length
             );
@@ -105,6 +110,15 @@ function showChatMessage(data) {
 
     messageRow.className =
         "chat-message-row";
+        
+const isMyMessage =
+    data.socketId === socket?.id;
+
+if (isMyMessage) {
+    messageRow.classList.add(
+        "chat-message-row--mine"
+    );
+}
 
     const emojiElement =
         document.createElement("div");
@@ -212,11 +226,17 @@ requestAnimationFrame(() => {
         });
     }
 
-    function enterRoom(room, nickname, isHost = false) {
+    function enterRoom(
+    room,
+    nickname,
+    isHost = false,
+    title = ""
+) {
         currentRoom = room;
         currentNickname = nickname;
 
-        roomCode.textContent = room;
+        roomTitle.textContent =
+    title || "제목 없음";
         hostStatus.textContent = isHost
             ? "내가 HOST입니다"
             : "참가자";
@@ -241,67 +261,115 @@ requestAnimationFrame(() => {
     }
 
     function joinRoom() {
-        const room = roomInput.value.trim().toUpperCase();
-        const nickname = nicknameInput.value.trim();
+    const room =
+        String(
+            inviteRoomCode || ""
+        )
+            .trim()
+            .toUpperCase();
 
-        if (!socket || !socket.connected) {
-            alert("서버가 연결되지 않았습니다.");
-            return;
-        }
+    const nickname =
+        nicknameInput.value.trim();
 
-        if (!room) {
-            alert("방 코드를 입력하세요.");
-            roomInput.focus();
-            return;
-        }
-
-        if (!nickname) {
-            alert("닉네임을 입력하세요.");
-            nicknameInput.focus();
-            return;
-        }
-
-        socket.emit(
-            "join room",
-            {
-                roomCode: room,
-                nickname
-            },
-            (response) => {
-                if (response && response.success === false) {
-                    alert(
-                        response.message || "방 참가에 실패했습니다."
-                    );
-                    return;
-                }
-
-                enterRoom(
-                    response?.roomCode || room,
-                    nickname,
-                    Boolean(response?.isHost)
-                );
-            }
-        );
-
-        setTimeout(() => {
-            if (!currentRoom) {
-                enterRoom(room, nickname, false);
-            }
-        }, 800);
+    if (!socket || !socket.connected) {
+        alert("서버가 연결되지 않았습니다.");
+        return;
     }
+
+    if (!room) {
+        alert("초대 링크를 통해 방에 접속해 주세요.");
+        return;
+    }
+
+    if (!nickname) {
+        alert("닉네임을 입력하세요.");
+        nicknameInput.focus();
+        return;
+    }
+
+    socket.emit(
+        "join room",
+        {
+            roomCode: room,
+            nickname
+        },
+        (response) => {
+            if (
+                response &&
+                response.success === false
+            ) {
+                alert(
+                    response.message ||
+                    "방 참가에 실패했습니다."
+                );
+                return;
+            }
+
+            enterRoom(
+    response?.roomCode || room,
+    nickname,
+    Boolean(response?.isHost),
+    response?.roomTitle || ""
+);
+        }
+    );
+}
 
     function createRoom() {
-        const nickname = nicknameInput.value.trim();
+    const roomTitle =
+        roomTitleInput.value.trim();
 
-        if (!nickname) {
-            alert("닉네임을 먼저 입력하세요.");
-            nicknameInput.focus();
-            return;
-        }
+    const nickname =
+        nicknameInput.value.trim();
 
-        roomInput.value = generateRoomCode();
-        joinRoom();
+    if (!roomTitle) {
+        alert("방 제목을 입력하세요.");
+        roomTitleInput.focus();
+        return;
     }
+
+    if (!nickname) {
+        alert("닉네임을 입력하세요.");
+        nicknameInput.focus();
+        return;
+    }
+
+    const roomCode =
+        generateRoomCode();
+
+    inviteRoomCode =
+        roomCode;
+
+    socket.emit(
+        "join room",
+        {
+            roomCode,
+            roomTitle,
+            nickname
+        },
+        (response) => {
+            if (
+                response &&
+                response.success === false
+            ) {
+                alert(
+                    response.message ||
+                    "방 생성에 실패했습니다."
+                );
+                return;
+            }
+
+            enterRoom(
+    response?.roomCode ||
+        roomCode,
+    nickname,
+    true,
+    response?.roomTitle ||
+        roomTitle
+);
+        }
+    );
+}
 
     function sendMessage() {
         const message = messageInput.value.trim();
@@ -360,6 +428,29 @@ socket = io(serverUrl, {
     socket.on("participant list", renderParticipants);
     socket.on("participants", renderParticipants);
     socket.on("chat message", showChatMessage);
+
+    socket.on(
+    "episode change",
+    (data) => {
+        const url =
+            String(
+                data?.url || ""
+            ).trim();
+
+        if (!url) {
+            return;
+        }
+
+        window.parent.postMessage(
+            {
+                type:
+                    "TVP_APPLY_EPISODE_CHANGE",
+                url
+            },
+            "*"
+        );
+    }
+);
 
     socket.on("player event", (data) => {
     window.parent.postMessage(
@@ -425,17 +516,14 @@ socket.on("system message", (data) => {
         }
     });
 
-    roomInput.addEventListener("input", () => {
-        roomInput.value = roomInput.value
-            .toUpperCase()
-            .replace(/[^A-Z0-9]/g, "");
-    });
-
-    roomInput.addEventListener("keydown", (event) => {
+roomTitleInput.addEventListener(
+    "keydown",
+    (event) => {
         if (event.key === "Enter") {
             nicknameInput.focus();
         }
-    });
+    }
+);
 
     nicknameInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
@@ -530,6 +618,27 @@ window.addEventListener("message", async (event) => {
     return;
 }
 
+if (type === "TVP_LOCAL_EPISODE_CHANGE") {
+    console.log(
+    "[TVP PANEL] LOCAL_EPISODE_CHANGE RECEIVED",
+    event.data?.url
+);
+
+    if (!socket?.connected || !currentRoom) {
+        return;
+    }
+
+    socket.emit(
+        "episode change",
+        {
+            roomCode: currentRoom,
+            url: event.data.url
+        }
+    );
+
+    return;
+}
+
     if (type === "TVP_LOCAL_PLAYER_EVENT") {
         if (!socket?.connected || !currentRoom) {
             return;
@@ -566,11 +675,21 @@ window.addEventListener("message", async (event) => {
         }
     }
 
-    if (type === "TVP_INVITE_ROOM_FOUND") {
-    roomInput.value = event.data.roomCode;
+    if (
+    type ===
+    "TVP_INVITE_ROOM_FOUND"
+) {
+    inviteRoomCode =
+        String(
+            event.data.roomCode || ""
+        )
+            .trim()
+            .toUpperCase();
 
-
+    return;
 }
+
+
 });
 
 showJoinScreen();

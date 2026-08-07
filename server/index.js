@@ -26,6 +26,7 @@ rooms["ABC123"] = [
 ];
 */
 const rooms = {};
+const roomTitles = {};
 console.log("✅ 새 이모지 서버 코드 실행됨");
 const TVP_EMOJIS = [
     "🤦",
@@ -207,6 +208,10 @@ io.on("connection", (socket) => {
             data?.nickname || ""
         ).trim();
 
+        const roomTitle = String(
+    data?.roomTitle || ""
+).trim();
+
         if (!roomCode || !nickname) {
             callback?.({
                 success: false,
@@ -218,8 +223,13 @@ io.on("connection", (socket) => {
         }
 
         if (!rooms[roomCode]) {
-            rooms[roomCode] = [];
-        }
+    rooms[roomCode] = [];
+
+    if (roomTitle) {
+        roomTitles[roomCode] =
+            roomTitle;
+    }
+}
 
         const duplicateNickname =
             rooms[roomCode].some(
@@ -261,11 +271,13 @@ rooms[roomCode].push(participant);
         socket.data.nickname = nickname;
 
         callback?.({
-            success: true,
-            roomCode,
-            nickname,
-            isHost
-        });
+    success: true,
+    roomCode,
+    roomTitle:
+        roomTitles[roomCode] || "",
+    nickname,
+    isHost
+});
 
         emitParticipantList(roomCode);
 
@@ -613,6 +625,7 @@ socket.on(
             rooms[roomCode].length === 0
         ) {
             delete rooms[roomCode];
+            delete roomTitles[roomCode];
 
             console.log(
                 `🗑️ ${roomCode} 방이 삭제되었습니다.`

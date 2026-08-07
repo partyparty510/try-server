@@ -1,42 +1,54 @@
 {
-  "manifest_version": 3,
-  "name": "TVP",
-  "version": "1.0.0",
-  "description": "TVING Watch Party",
+    "manifest_version": 3,
+    "name": "TVP",
+    "version": "1.0.0",
+    "description": "TVING & WAVVE Watch Party",
 
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
+    "permissions": [
+        "storage",
+        "activeTab"
+    ],
 
-  "host_permissions": [
-    "https://www.tving.com/*",
-    "http://localhost:3000/*"
-  ],
+    "host_permissions": [
+        "https://www.tving.com/*",
+        "https://www.wavve.com/*",
+        "http://localhost:3000/*",
+        "https://try-server-5rp4.onrender.com/*"
+    ],
 
-  "content_scripts": [
-    {
-      "matches": [
-        "https://www.tving.com/*"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.tving.com/*"
+            ],
+            "js": [
+                "content-tving.js"
+            ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://www.wavve.com/*"
+            ],
+            "js": [
+                "content-wavve.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
 
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "panel.html",
-        "panel.css",
-        "panel.js",
-        "socket.io.min.js"
-      ],
-      "matches": [
-        "https://www.tving.com/*"
-      ]
-    }
-  ]
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "panel.html",
+                "panel.css",
+                "panel.js",
+                "socket.io.min.js"
+            ],
+            "matches": [
+                "https://www.tving.com/*",
+                "https://www.wavve.com/*"
+            ]
+        }
+    ]
 }
