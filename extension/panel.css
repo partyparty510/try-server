@@ -326,6 +326,46 @@ body.tvp-collapsed .tvp-expand-button {
     color: #ffffff;
 }
 
+.tvp-form-row {
+    display: grid;
+    grid-template-columns: 52px 1fr 90px;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.tvp-form-row .tvp-form-label {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.tvp-form-row .tvp-form-input {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.tvp-form-row .tvp-primary-button,
+.tvp-form-row .tvp-secondary-button {
+    width: 90px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.tvp-nickname-row {
+    grid-template-columns: 52px 1fr 90px;
+}
+
+.tvp-nickname-row .tvp-form-input {
+    grid-column: 2 / 4;
+}
+
+.tvp-input-error::placeholder {
+    color: #ff4d4f;
+    opacity: 1;
+}
+
 .tvp-form-input:focus {
     border-color: #7659e8;
 }

@@ -18,6 +18,10 @@ const DEFAULT_SERVER_URL =
     document.getElementById(
         "room-title-input"
     );
+    const roomInput =
+    document.getElementById(
+        "room-input"
+    );
     const nicknameInput = document.getElementById("nickname-input");
     const joinButton = document.getElementById("join-button");
     const createRoomButton = document.getElementById("create-room-button");
@@ -77,6 +81,31 @@ const participantPopup = document.getElementById("participant-popup");
 
         return result;
     }
+function requireNickname() {
+    const nickname =
+        nicknameInput.value.trim();
+
+    if (nickname) {
+        nicknameInput.classList.remove(
+            "tvp-input-error"
+        );
+
+        return nickname;
+    }
+
+    nicknameInput.value = "";
+
+    nicknameInput.placeholder =
+        "닉네임을 입력해주세요";
+
+    nicknameInput.classList.add(
+        "tvp-input-error"
+    );
+
+    nicknameInput.focus();
+
+    return "";
+}
 
     function showSystemMessage(text) {
         emptyChat.hidden = true;
@@ -260,16 +289,22 @@ requestAnimationFrame(() => {
         messageInput.focus();
     }
 
-    function joinRoom() {
+function joinRoom() {
     const room =
         String(
-            inviteRoomCode || ""
+            roomInput.value ||
+            inviteRoomCode ||
+            ""
         )
             .trim()
             .toUpperCase();
 
     const nickname =
-        nicknameInput.value.trim();
+        requireNickname();
+
+    if (!nickname) {
+        return;
+    }
 
     if (!socket || !socket.connected) {
         alert("서버가 연결되지 않았습니다.");
@@ -277,13 +312,10 @@ requestAnimationFrame(() => {
     }
 
     if (!room) {
-        alert("초대 링크를 통해 방에 접속해 주세요.");
-        return;
-    }
-
-    if (!nickname) {
-        alert("닉네임을 입력하세요.");
-        nicknameInput.focus();
+        roomInput.value = "";
+        roomInput.placeholder =
+            "방 코드를 입력해주세요";
+        roomInput.focus();
         return;
     }
 
@@ -306,31 +338,31 @@ requestAnimationFrame(() => {
             }
 
             enterRoom(
-    response?.roomCode || room,
-    nickname,
-    Boolean(response?.isHost),
-    response?.roomTitle || ""
-);
+                response?.roomCode || room,
+                nickname,
+                Boolean(response?.isHost),
+                response?.roomTitle || ""
+            );
         }
     );
 }
 
-    function createRoom() {
+function createRoom() {
     const roomTitle =
         roomTitleInput.value.trim();
 
     const nickname =
-        nicknameInput.value.trim();
+        requireNickname();
 
-    if (!roomTitle) {
-        alert("방 제목을 입력하세요.");
-        roomTitleInput.focus();
+    if (!nickname) {
         return;
     }
 
-    if (!nickname) {
-        alert("닉네임을 입력하세요.");
-        nicknameInput.focus();
+    if (!roomTitle) {
+        roomTitleInput.value = "";
+        roomTitleInput.placeholder =
+            "방 제목을 입력해주세요";
+        roomTitleInput.focus();
         return;
     }
 
@@ -338,6 +370,9 @@ requestAnimationFrame(() => {
         generateRoomCode();
 
     inviteRoomCode =
+        roomCode;
+
+    roomInput.value =
         roomCode;
 
     socket.emit(
@@ -360,13 +395,13 @@ requestAnimationFrame(() => {
             }
 
             enterRoom(
-    response?.roomCode ||
-        roomCode,
-    nickname,
-    true,
-    response?.roomTitle ||
-        roomTitle
-);
+                response?.roomCode ||
+                    roomCode,
+                nickname,
+                true,
+                response?.roomTitle ||
+                    roomTitle
+            );
         }
     );
 }
@@ -461,38 +496,9 @@ socket = io(serverUrl, {
         "*"
     );
 
-    if (data.action === "play") {
-        showSystemMessage(
-            "재생"
-        );
-    }
+   
 
-    if (data.action === "pause") {
-        showSystemMessage(
-            "일시정지"
-        );
-    }
 
-    if (data.action === "seek") {
-        const seconds = Math.floor(
-            data.time
-        );
-
-        const min = Math.floor(
-            seconds / 60
-        );
-
-        const sec = String(
-            seconds % 60
-        ).padStart(
-            2,
-            "0"
-        );
-
-        showSystemMessage(
-            `${min}:${sec}로 이동`
-        );
-    }
 });
 
 socket.on("player state requested", (data) => {
@@ -516,6 +522,31 @@ socket.on("system message", (data) => {
         }
     });
 
+    roomInput.addEventListener(
+    "input",
+    () => {
+        roomInput.value =
+            roomInput.value
+                .toUpperCase()
+                .replace(
+                    /[^A-Z0-9]/g,
+                    ""
+                )
+                .slice(0, 4);
+
+        roomInput.placeholder =
+            "자동할당";
+    }
+);
+
+roomTitleInput.addEventListener(
+    "input",
+    () => {
+        roomTitleInput.placeholder =
+            "방 제목을 입력하세요";
+    }
+);
+
 roomTitleInput.addEventListener(
     "keydown",
     (event) => {
@@ -525,17 +556,45 @@ roomTitleInput.addEventListener(
     }
 );
 
-    nicknameInput.addEventListener("keydown", (event) => {
+roomInput.addEventListener(
+    "keydown",
+    (event) => {
         if (event.key === "Enter") {
-            joinRoom();
+            nicknameInput.focus();
         }
-    });
+    }
+);
 
-    messageInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            sendMessage();
+nicknameInput.addEventListener(
+    "input",
+    () => {
+        nicknameInput.classList.remove(
+            "tvp-input-error"
+        );
+
+        nicknameInput.placeholder =
+            "닉네임";
+    }
+);
+
+nicknameInput.addEventListener(
+    "keydown",
+    (event) => {
+        if (event.key !== "Enter") {
+            return;
         }
-    });
+
+        if (roomInput.value.trim()) {
+            joinRoom();
+            return;
+        }
+
+        if (roomTitleInput.value.trim()) {
+            createRoom();
+        }
+    }
+);
+
 
     joinButton.addEventListener("click", joinRoom);
     createRoomButton.addEventListener("click", createRoom);
@@ -685,6 +744,9 @@ if (type === "TVP_LOCAL_EPISODE_CHANGE") {
         )
             .trim()
             .toUpperCase();
+
+    roomInput.value =
+        inviteRoomCode;
 
     return;
 }

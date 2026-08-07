@@ -870,10 +870,10 @@ function handleVideoSeeked() {
         );
 
     adjustedTime +=
-        Math.min(
-            networkDelay,
-            2
-        );
+    Math.min(
+        networkDelay,
+        2
+    ) + 0.5;
 }
 
 const adjustedDifference =

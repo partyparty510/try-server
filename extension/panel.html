@@ -61,53 +61,75 @@
 
 
 
-                <label
-    class="tvp-form-label"
-    for="room-title-input"
->
-    방 제목
-</label>
+                <div class="tvp-form-row">
+    <label
+        class="tvp-form-label"
+        for="room-title-input"
+    >
+        방 제목
+    </label>
 
-<input
-    id="room-title-input"
-    class="tvp-form-input"
-    type="text"
-    maxlength="40"
-    placeholder="방 제목을 입력하세요"
-    autocomplete="off"
->
+    <input
+        id="room-title-input"
+        class="tvp-form-input"
+        type="text"
+        maxlength="40"
+        placeholder="방 제목을 입력하세요"
+        autocomplete="off"
+    >
 
-                <label
-                    class="tvp-form-label"
-                    for="nickname-input"
-                >
-                    닉네임
-                </label>
+    <button
+        id="create-room-button"
+        class="tvp-secondary-button"
+        type="button"
+    >
+        새 방 만들기
+    </button>
+</div>
 
-                <input
-                    id="nickname-input"
-                    class="tvp-form-input"
-                    type="text"
-                    maxlength="20"
-                    placeholder="닉네임"
-                    autocomplete="off"
-                >
+<div class="tvp-form-row">
+    <label
+        class="tvp-form-label"
+        for="room-input"
+    >
+        방 코드
+    </label>
 
-                <button
-                    id="join-button"
-                    class="tvp-primary-button"
-                    type="button"
-                >
-                    방 참가
-                </button>
+    <input
+        id="room-input"
+        class="tvp-form-input"
+        type="text"
+        maxlength="4"
+        placeholder="자동할당"
+        autocomplete="off"
+    >
 
-                <button
-                    id="create-room-button"
-                    class="tvp-secondary-button"
-                    type="button"
-                >
-                    새 방 만들기
-                </button>
+    <button
+        id="join-button"
+        class="tvp-primary-button"
+        type="button"
+    >
+        방 참가
+    </button>
+</div>
+
+<div class="tvp-form-row tvp-nickname-row">
+    <label
+        class="tvp-form-label"
+        for="nickname-input"
+    >
+        닉네임
+    </label>
+
+    <input
+        id="nickname-input"
+        class="tvp-form-input"
+        type="text"
+        maxlength="20"
+        placeholder="닉네임"
+        autocomplete="off"
+    >
+</div>
 
                 <p
                     id="connection-status"
