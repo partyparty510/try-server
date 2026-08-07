@@ -7,7 +7,7 @@
     }
 
 const DEFAULT_SERVER_URL =
-"https://beneficial-cube-unknown-butterfly.trycloudflare.com";
+"https://try-server-5rp4.onrender.com";
 
 
 
@@ -164,8 +164,15 @@ function showChatMessage(data) {
         messageRow
     );
 
-    messageList.scrollTop =
-        messageList.scrollHeight;
+const chatSection =
+    document.getElementById("chat-section");
+
+requestAnimationFrame(() => {
+    if (chatSection) {
+        chatSection.scrollTop =
+            chatSection.scrollHeight;
+    }
+});
 }
 
     function renderParticipants(participants) {
