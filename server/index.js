@@ -447,6 +447,51 @@ socket.on("chat message", (data) => {
             }
         );
     });
+/*
+ * 호스트 에피소드 변경 전달
+ */
+socket.on(
+    "episode change",
+    (data) => {
+        const roomCode =
+            socket.data.roomCode;
+
+        if (!roomCode) {
+            return;
+        }
+
+        const participant =
+            getParticipant(
+                roomCode,
+                socket.id
+            );
+
+        if (
+            !participant ||
+            !participant.isHost
+        ) {
+            return;
+        }
+
+        const url =
+            String(
+                data?.url || ""
+            ).trim();
+
+        if (!url) {
+            return;
+        }
+
+        socket
+            .to(roomCode)
+            .emit(
+                "episode change",
+                {
+                    url
+                }
+            );
+    }
+);
 
     /*
      * 새 참가자가 들어왔을 때
