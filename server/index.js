@@ -443,6 +443,11 @@ socket.on("chat message", (data) => {
                 playbackRate:
                     Number(data?.playbackRate) ||
                     1,
+
+                    hostSentAt:
+    Number(data?.sentAt) ||
+    Date.now(), 
+    
                 sentAt: Date.now()
             }
         );
