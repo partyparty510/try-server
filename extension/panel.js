@@ -463,65 +463,6 @@ socket = io(serverUrl, {
     socket.on("participant list", renderParticipants);
     socket.on("participants", renderParticipants);
 
-    socket.on(
-    "change nickname",
-    (data, callback) => {
-        const roomCode =
-            socket.data.roomCode;
-
-        const newNickname =
-            String(
-                data?.nickname || ""
-            ).trim();
-
-        if (
-            !roomCode ||
-            !rooms[roomCode] ||
-            !newNickname
-        ) {
-            callback?.({
-                success: false,
-                message:
-                    "닉네임 변경에 실패했습니다."
-            });
-
-            return;
-        }
-
-        const participant =
-            rooms[roomCode].find(
-                (item) =>
-                    item.socketId ===
-                    socket.id
-            );
-
-        if (!participant) {
-            callback?.({
-                success: false,
-                message:
-                    "참가자 정보를 찾을 수 없습니다."
-            });
-
-            return;
-        }
-
-        participant.nickname =
-            newNickname;
-
-        socket.data.nickname =
-            newNickname;
-
-        emitParticipantList(
-            roomCode
-        );
-
-        callback?.({
-            success: true,
-            nickname:
-                newNickname
-        });
-    }
-);
 
     socket.on("chat message", showChatMessage);
 

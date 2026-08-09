@@ -449,17 +449,6 @@ body.tvp-collapsed .tvp-expand-button {
     flex-direction: column;
 }
 
-.tvp-host-status {
-    margin-top: 12px;
-    color: #8e8e8e;
-    font-size: 12px;
-}
-
-.tvp-host-status.is-host {
-    color: #9b87ff;
-    font-weight: 700;
-}
-
 .tvp-participant-list,
 .tvp-message-list {
     margin: 0;
