@@ -30,7 +30,15 @@ const DEFAULT_SERVER_URL =
     const roomTitle =
     document.getElementById("room-title");
     const copyButton = document.getElementById("copy-button");
-    const hostStatus = document.getElementById("host-status");
+    const currentNicknameDisplay =
+    document.getElementById(
+        "current-nickname"
+    );
+
+const changeNicknameButton =
+    document.getElementById(
+        "change-nickname-button"
+    );
 
     const participantCount = document.getElementById("participant-count");
     const participantList = document.getElementById("participant-list");
@@ -247,11 +255,6 @@ requestAnimationFrame(() => {
 
             participantList.appendChild(item);
 
-            if (participant.nickname === currentNickname) {
-                hostStatus.textContent = participant.isHost
-                    ? "내가 HOST입니다"
-                    : "참가자";
-            }
         });
     }
 
@@ -262,13 +265,10 @@ requestAnimationFrame(() => {
     title = ""
 ) {
         currentRoom = room;
-        currentNickname = nickname;
+currentNickname = nickname;
 
-        roomTitle.textContent =
-    title || "제목 없음";
-        hostStatus.textContent = isHost
-            ? "내가 HOST입니다"
-            : "참가자";
+currentNicknameDisplay.textContent =
+    currentNickname;
 
         showRoomScreen();
     
@@ -462,6 +462,67 @@ socket = io(serverUrl, {
 
     socket.on("participant list", renderParticipants);
     socket.on("participants", renderParticipants);
+
+    socket.on(
+    "change nickname",
+    (data, callback) => {
+        const roomCode =
+            socket.data.roomCode;
+
+        const newNickname =
+            String(
+                data?.nickname || ""
+            ).trim();
+
+        if (
+            !roomCode ||
+            !rooms[roomCode] ||
+            !newNickname
+        ) {
+            callback?.({
+                success: false,
+                message:
+                    "닉네임 변경에 실패했습니다."
+            });
+
+            return;
+        }
+
+        const participant =
+            rooms[roomCode].find(
+                (item) =>
+                    item.socketId ===
+                    socket.id
+            );
+
+        if (!participant) {
+            callback?.({
+                success: false,
+                message:
+                    "참가자 정보를 찾을 수 없습니다."
+            });
+
+            return;
+        }
+
+        participant.nickname =
+            newNickname;
+
+        socket.data.nickname =
+            newNickname;
+
+        emitParticipantList(
+            roomCode
+        );
+
+        callback?.({
+            success: true,
+            nickname:
+                newNickname
+        });
+    }
+);
+
     socket.on("chat message", showChatMessage);
 
     socket.on(
@@ -653,6 +714,98 @@ copyButton.addEventListener("click", () => {
         "*"
     );
 });
+
+let nicknameEditInput = null;
+
+changeNicknameButton.addEventListener(
+    "click",
+    () => {
+        if (!currentRoom) {
+            return;
+        }
+
+        /*
+         * 수정 중이 아니면 입력창으로 변경
+         */
+        if (!nicknameEditInput) {
+            nicknameEditInput =
+                document.createElement("input");
+
+            nicknameEditInput.type =
+                "text";
+
+            nicknameEditInput.maxLength =
+                20;
+
+            nicknameEditInput.value =
+                currentNickname;
+
+            nicknameEditInput.className =
+                "tvp-nickname-edit-input";
+
+            currentNicknameDisplay.replaceWith(
+                nicknameEditInput
+            );
+
+            changeNicknameButton.textContent =
+                "확인";
+
+            nicknameEditInput.focus();
+            nicknameEditInput.select();
+
+            return;
+        }
+
+        /*
+         * 수정 중이면 닉네임 변경 요청
+         */
+        const newNickname =
+            nicknameEditInput.value.trim();
+
+        if (!newNickname) {
+            nicknameEditInput.focus();
+            return;
+        }
+
+        socket.emit(
+            "change nickname",
+            {
+                roomCode:
+                    currentRoom,
+                nickname:
+                    newNickname
+            },
+            (response) => {
+                if (
+                    response &&
+                    response.success === false
+                ) {
+                    alert(
+                        response.message ||
+                        "닉네임 변경에 실패했습니다."
+                    );
+                    return;
+                }
+
+                currentNickname =
+                    newNickname;
+
+                currentNicknameDisplay.textContent =
+                    newNickname;
+
+                nicknameEditInput.replaceWith(
+                    currentNicknameDisplay
+                );
+
+                nicknameEditInput =
+                    null;
+
+                changeNicknameButton.textContent =
+                    "변경";
+            }
+        );
+    }
+);
 
 participantButton.addEventListener(
     "click",

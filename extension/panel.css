@@ -114,6 +114,36 @@ button {
     gap: 14px;
 }
 
+.tvp-nickname-display-row {
+    margin-top: 8px;
+}
+
+.tvp-current-nickname {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tvp-nickname-edit-input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 7px 9px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    background: #222;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+}
+
+.tvp-nickname-edit-input:focus {
+    border-color: #888;
+}
+
 .tvp-label {
     margin-bottom: 6px;
     color: #8e8e8e;
@@ -170,6 +200,19 @@ button {
     min-height: 0;
     padding: 18px;
     overflow-y: auto;
+}
+
+.tvp-chat-section::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tvp-chat-section::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tvp-chat-section::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 999px;
 }
 
 .tvp-empty-chat {
