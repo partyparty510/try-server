@@ -384,6 +384,14 @@ if (duplicateNickname) {
             roomCode
         );
 
+        io.to(roomCode).emit(
+    "system message",
+    {
+        message:
+            `${oldNickname}님이 ${newNickname}님으로 다시 태어났습니다.`
+    }
+);
+
         callback?.({
             success: true,
             nickname:
@@ -734,14 +742,6 @@ socket.on(
         }
 
         emitParticipantList(roomCode);
-
-        io.to(roomCode).emit(
-    "system message",
-    {
-        message:
-            `${oldNickname}님이 ${newNickname}님으로 다시 태어났습니다.`
-    }
-);
 
         io.to(roomCode).emit(
             "system message",
