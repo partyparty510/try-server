@@ -371,6 +371,9 @@ if (duplicateNickname) {
             return;
         }
 
+        const oldNickname =
+    participant.nickname;
+
         participant.nickname =
             newNickname;
 
@@ -731,6 +734,14 @@ socket.on(
         }
 
         emitParticipantList(roomCode);
+
+        io.to(roomCode).emit(
+    "system message",
+    {
+        message:
+            `${oldNickname}님이 ${newNickname}님으로 다시 태어났습니다.`
+    }
+);
 
         io.to(roomCode).emit(
             "system message",

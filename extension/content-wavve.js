@@ -1143,12 +1143,9 @@ frame.style.setProperty(
             "important"
         );
 
-const panelHost =
-    document.getElementById(
-        "container"
-    ) || document.body;
-
-panelHost.appendChild(frame);
+document.documentElement.appendChild(
+    frame
+);
 
         panelWidth = PANEL_WIDTH;
 
