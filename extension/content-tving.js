@@ -1217,19 +1217,86 @@ const observer =
                 event.data?.type;
    
 if (type === "TVP_REQUEST_INVITE_ROOM") {
-    const roomCode = new URL(window.location.href)
-        .searchParams.get("tvpRoom");
+    const urlRoomCode =
+        new URL(
+            window.location.href
+        ).searchParams.get(
+            "tvpRoom"
+        );
 
-if (roomCode) {
-    postToPanel({
-        type: "TVP_INVITE_ROOM_FOUND",
-        roomCode
-    });
-}
+    const savedRoomCode =
+        sessionStorage.getItem(
+            "tvpRoomCode"
+        );
+
+    const savedNickname =
+        sessionStorage.getItem(
+            "tvpNickname"
+        );
+        
+        const savedWasHost =
+    sessionStorage.getItem(
+        "tvpWasHost"
+    ) === "true";
+    
+    const roomCode =
+        urlRoomCode ||
+        savedRoomCode ||
+        "";
+
+    if (roomCode) {
+        postToPanel({
+    type:
+        "TVP_INVITE_ROOM_FOUND",
+    roomCode,
+    nickname:
+        savedNickname || "",
+    wasHost:
+        savedWasHost
+});
+    }
 
     return;
 }
-                
+if (type === "TVP_SET_ACTIVE_ROOM") {
+    const roomCode =
+        String(
+            event.data.roomCode || ""
+        ).trim();
+
+    const nickname =
+        String(
+            event.data.nickname || ""
+        ).trim();
+
+    const savedIsHost =
+        Boolean(
+            event.data.isHost
+        );
+
+    if (roomCode) {
+        sessionStorage.setItem(
+            "tvpRoomCode",
+            roomCode
+        );
+    }
+
+    if (nickname) {
+        sessionStorage.setItem(
+            "tvpNickname",
+            nickname
+        );
+    }
+
+    sessionStorage.setItem(
+        "tvpWasHost",
+        savedIsHost
+            ? "true"
+            : "false"
+    );
+
+    return;
+}
 if (type === "TVP_REQUEST_INVITE_LINK") {
 const roomCode = event.data.roomCode;
 

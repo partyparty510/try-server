@@ -337,21 +337,45 @@ rooms[roomCode].push(participant);
             return;
         }
 
-        const duplicateNickname =
-    rooms[roomCode].some(
-        (item) =>
-            item.socketId !== socket.id &&
-            item.nickname === newNickname
+        const duplicateParticipant =
+    rooms[roomCode].find(
+        (participant) =>
+            participant.nickname === nickname
     );
 
-if (duplicateNickname) {
-    callback?.({
-        success: false,
-        message:
-            "이미 사용 중인 닉네임입니다."
-    });
+let reconnectWasHost = false;
 
-    return;
+if (duplicateParticipant) {
+    /*
+     * 같은 닉네임이 이미 있으면
+     * 이전 페이지의 소켓으로 보고 교체한다.
+     */
+    reconnectWasHost =
+        Boolean(
+            duplicateParticipant.isHost
+        );
+
+    rooms[roomCode] =
+        rooms[roomCode].filter(
+            (participant) =>
+                participant.socketId !==
+                duplicateParticipant.socketId
+        );
+
+    const oldSocket =
+        io.sockets.sockets.get(
+            duplicateParticipant.socketId
+        );
+
+    if (oldSocket) {
+        oldSocket.leave(roomCode);
+
+        oldSocket.data.roomCode =
+            null;
+
+        oldSocket.data.nickname =
+            null;
+    }
 }
 
         const participant =

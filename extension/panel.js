@@ -387,7 +387,19 @@ currentNicknameDisplay.textContent =
     currentNickname;
 
         showRoomScreen();
-    
+    window.parent.postMessage(
+    {
+        type:
+            "TVP_SET_ACTIVE_ROOM",
+        roomCode:
+            currentRoom,
+        nickname:
+            currentNickname,
+        isHost:
+            isHost
+    },
+    "*"
+);
                 window.parent.postMessage(
             {
                 type: "TVP_SET_HOST_STATUS",
@@ -966,7 +978,7 @@ if (type === "TVP_LOCAL_EPISODE_CHANGE") {
         }
     }
 
-    if (
+if (
     type ===
     "TVP_INVITE_ROOM_FOUND"
 ) {
@@ -977,8 +989,106 @@ if (type === "TVP_LOCAL_EPISODE_CHANGE") {
             .trim()
             .toUpperCase();
 
+    const savedNickname =
+        String(
+            event.data.nickname || ""
+        ).trim();
+
+    const wasHost =
+        Boolean(
+            event.data.wasHost
+        );
+
     roomInput.value =
         inviteRoomCode;
+
+    if (savedNickname) {
+        nicknameInput.value =
+            savedNickname;
+    }
+
+    if (
+        !savedNickname ||
+        !inviteRoomCode
+    ) {
+        return;
+    }
+
+    /*
+     * 이전 HOST는 먼저 같은 방 코드로
+     * 방을 다시 만든다.
+     */
+    if (wasHost) {
+        setTimeout(
+            () => {
+                if (
+                    !socket?.connected ||
+                    currentRoom
+                ) {
+                    return;
+                }
+
+                const roomCode =
+                    inviteRoomCode;
+
+                const nickname =
+                    savedNickname;
+
+                socket.emit(
+                    "join room",
+                    {
+                        roomCode,
+                        roomTitle:
+                            "같이 보기",
+                        nickname
+                    },
+                    (response) => {
+                        if (
+                            response &&
+                            response.success ===
+                                false
+                        ) {
+                            console.warn(
+                                "TVP 방 자동 재생성 실패:",
+                                response.message
+                            );
+
+                            return;
+                        }
+
+                        enterRoom(
+                            response?.roomCode ||
+                                roomCode,
+                            nickname,
+                            true,
+                            response?.roomTitle ||
+                                "같이 보기"
+                        );
+                    }
+                );
+            },
+            300
+        );
+
+        return;
+    }
+
+    /*
+     * 이전 게스트는 HOST가 방을
+     * 다시 만들 시간을 조금 기다린 뒤 참가
+     */
+    setTimeout(
+        () => {
+            if (
+                socket?.connected &&
+                inviteRoomCode &&
+                !currentRoom
+            ) {
+                joinRoom();
+            }
+        },
+        1200
+    );
 
     return;
 }
