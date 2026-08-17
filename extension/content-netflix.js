@@ -416,22 +416,7 @@ function checkWavveEpisodeChange() {
     lastPlayerUrl =
         currentUrl;
 
-        console.log(
-    "[TVP WAVVE] URL CHANGED",
-    previousUrl,
-    "→",
-    currentUrl,
-    "isHost:",
-    isHost
-);
-console.log(
-    "[TVP WAVVE] EPISODE CHECK",
-    {
-        previousUrl,
-        currentUrl,
-        isHost
-    }
-);
+
 
 
     if (!isHost) {
@@ -464,21 +449,8 @@ console.log(
         }, 300);
 }
 
-    function postToPanel(message) {
-    console.log(
-        "[TVP WAVVE] postToPanel",
-        message?.type,
-        {
-            frameExists: Boolean(frame),
-            frameConnected:
-                Boolean(frame?.isConnected),
-            hasContentWindow:
-                Boolean(frame?.contentWindow),
-            message
-        }
-    );
-
-    frame?.contentWindow?.postMessage(
+function postToPanel(message) {
+        frame?.contentWindow?.postMessage(
         message,
         "*"
     );
@@ -1021,7 +993,97 @@ try {
             }, 5000);
     }
 
-    function createPanel() {
+    function adjustNetflixPopupPosition() {
+    const popup =
+        document.querySelector(
+            ".default-ltr-iqcdef-cache-12lxt6i.show"
+        );
+
+    const player =
+        document.querySelector(
+            ".watch-video--player-view"
+        );
+
+    if (!popup || !player) {
+        return;
+    }
+
+    /*
+     * 같은 팝업을 다시 계산할 경우
+     * 이전 TVP 이동값부터 제거
+     */
+    if (
+        popup.dataset.tvpAdjusted ===
+        "true"
+    ) {
+        popup.style.removeProperty(
+            "transform"
+        );
+
+        delete popup.dataset.tvpAdjusted;
+    }
+
+    const popupRect =
+        popup.getBoundingClientRect();
+
+    const playerRect =
+        player.getBoundingClientRect();
+
+    const overflowRight =
+        popupRect.right -
+        playerRect.right;
+
+    if (overflowRight <= 0) {
+        return;
+    }
+
+    popup.style.setProperty(
+        "transform",
+        `translateX(-${Math.ceil(
+            overflowRight + 16
+        )}px)`,
+        "important"
+    );
+
+    popup.dataset.tvpAdjusted =
+        "true";
+}
+
+let netflixPopupAdjustTimers = [];
+
+function scheduleNetflixPopupAdjust() {
+    netflixPopupAdjustTimers.forEach(
+        (timer) => {
+            clearTimeout(timer);
+        }
+    );
+
+    netflixPopupAdjustTimers = [];
+
+    [
+        50,
+        120,
+        250,
+        400
+    ].forEach((delay) => {
+        const timer =
+            setTimeout(() => {
+                adjustNetflixPopupPosition();
+            }, delay);
+
+        netflixPopupAdjustTimers.push(
+            timer
+        );
+    });
+}
+
+document.addEventListener(
+    "mouseover",
+    scheduleNetflixPopupAdjust,
+    true
+);
+
+function createPanel() {
         if (
             frame ||
             document.getElementById(
@@ -1031,7 +1093,6 @@ try {
         ) {
             return;
         }
-
         frame =
             document.createElement(
                 "iframe"
@@ -1229,24 +1290,39 @@ const observer =
     new MutationObserver(() => {
         checkWavveEpisodeChange();
         if (findVideo()) {
-            createPanel();
-            attachVideoEvents();
+    createPanel();
+    attachVideoEvents();
 
-            if (
-    document
-        .getElementById("container")
-        ?.classList.contains(
-            "fullscreen"
-        )
-) {
-                frame?.style.setProperty(
-                    "display",
-                    "block",
-                    "important"
-                );
-            }
+    const player =
+        findPlayer();
 
-       } else if (
+    if (player) {
+        const expectedWidth =
+            Math.max(
+                320,
+                document.documentElement.clientWidth -
+                    panelWidth
+            );
+
+        const actualWidth =
+            player.getBoundingClientRect().width;
+
+        /*
+         * Netflix가 다음 회차 전환 과정에서
+         * TVP가 잡아둔 플레이어 폭을 풀어버린
+         * 경우에만 다시 적용한다.
+         */
+        if (
+            Math.abs(
+                actualWidth -
+                expectedWidth
+            ) > 2
+        ) {
+            scheduleScaleUpdate();
+        }
+    }
+
+} else if (
     frame &&
     !/^\/watch\/\d+/.test(
         window.location.pathname
