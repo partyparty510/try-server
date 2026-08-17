@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "TVP",
     "version": "1.0.0",
-    "description": "TVING & WAVVE Watch Party",
+    "description": "TVING & WAVVE & Netflix Watch Party",
 
     "permissions": [
         "storage",
@@ -12,6 +12,7 @@
     "host_permissions": [
         "https://www.tving.com/*",
         "https://www.wavve.com/*",
+        "https://www.netflix.com/*",
         "http://localhost:3000/*",
         "https://try-server-5rp4.onrender.com/*"
     ],
@@ -34,6 +35,15 @@
                 "content-wavve.js"
             ],
             "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://www.netflix.com/*"
+            ],
+            "js": [
+                "content-netflix.js"
+            ],
+            "run_at": "document_idle"
         }
     ],
 
@@ -47,7 +57,8 @@
             ],
             "matches": [
                 "https://www.tving.com/*",
-                "https://www.wavve.com/*"
+                "https://www.wavve.com/*",
+                "https://www.netflix.com/*"
             ]
         }
     ]

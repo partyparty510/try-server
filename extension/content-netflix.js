@@ -27,7 +27,6 @@
 
 let episodeChangeTimer = null;
 
-
     if (
         document.getElementById(
             FRAME_ID
@@ -94,32 +93,36 @@ let episodeChangeTimer = null;
     restorePreviousChanges();
 
 function findPlayer() {
-    const videoRoot =
+    return (
         document.querySelector(
-            '[data-testid="player-video-root"]'
-        );
-
-    if (!videoRoot) {
-        return null;
-    }
-
-    return videoRoot.closest(
-        ".layout-player-main"
+            ".watch-video--player-view"
+        ) ||
+        document.querySelector(
+            '[data-uia="player"]'
+        ) ||
+        null
     );
 }
 
 function findVideo() {
-    const videoRoot =
+    const netflixPlayer =
         document.querySelector(
-            '[data-testid="player-video-root"]'
+            '[data-uia="player"]'
         );
 
-    if (!videoRoot) {
-        return null;
+    if (netflixPlayer) {
+        const video =
+            netflixPlayer.querySelector(
+                "video"
+            );
+
+        if (video) {
+            return video;
+        }
     }
 
-    return videoRoot.querySelector(
-        'video[id^="tving-player-"]'
+    return document.querySelector(
+        '[data-uia="watch-video"] video'
     );
 }
 
@@ -255,113 +258,21 @@ function installSeekBarFix() {
 }
 
 function installSeekHoverFix() {
-    const hideTvingPreviewStyle =
-    document.createElement("style");
-
-hideTvingPreviewStyle.textContent = `
-    [class*="PcThumbnailPreview_is-thumbnail-visible"],
-    [class*="PcThumbnailPreview_progress-bar__dhRGl"],
-    .progress__white-dot,
-    .progress-pointer {
-        display: none !important;
-    }
-`;
-
-document.documentElement.appendChild(
-    hideTvingPreviewStyle
-);
-
-    const tooltip =
-        document.createElement("div");
-
-    tooltip.id =
-        "tvp-seek-tooltip";
-
-    Object.assign(
-        tooltip.style,
-        {
-            position: "fixed",
-            display: "none",
-            zIndex: "2147483646",
-            pointerEvents: "none",
-
-            padding: "5px 8px",
-            borderRadius: "5px",
-
-            background:
-                "rgba(0, 0, 0, 0.85)",
-
-            color: "#fff",
-            fontSize: "12px",
-            lineHeight: "1",
-
-            transform:
-                "translateX(-50%)"
-        }
-    );
-
-    document.documentElement
-        .appendChild(tooltip);
-
-    function formatTime(seconds) {
-        seconds =
-            Math.max(
-                0,
-                Math.floor(seconds)
-            );
-
-        const hours =
-            Math.floor(
-                seconds / 3600
-            );
-
-        const minutes =
-            Math.floor(
-                (seconds % 3600) / 60
-            );
-
-        const secs =
-            seconds % 60;
-
-        if (hours > 0) {
-            return (
-                hours +
-                ":" +
-                String(minutes)
-                    .padStart(2, "0") +
-                ":" +
-                String(secs)
-                    .padStart(2, "0")
-            );
-        }
-
-        return (
-            minutes +
-            ":" +
-            String(secs)
-                .padStart(2, "0")
-        );
-    }
-
     window.addEventListener(
         "mousemove",
         (event) => {
+            /*
+             * 우리가 새로 만들어 보낸 이벤트는
+             * 다시 보정하지 않는다.
+             */
+            if (!event.isTrusted) {
+                return;
+            }
+
             const player =
                 findPlayer();
 
-            const video =
-                findVideo();
-
-            if (
-                !player ||
-                !video ||
-                !Number.isFinite(
-                    video.duration
-                )
-            ) {
-                tooltip.style.display =
-                    "none";
-
+            if (!player) {
                 return;
             }
 
@@ -371,90 +282,124 @@ document.documentElement.appendChild(
                 );
 
             if (!progressBar) {
-                tooltip.style.display =
-                    "none";
-
                 return;
             }
 
             const rect =
-                progressBar
-                    .getBoundingClientRect();
-
-            const hitTop =
-                rect.top - 25;
-
-            const hitBottom =
-                rect.bottom + 25;
+                progressBar.getBoundingClientRect();
 
             if (
-                event.clientX <
-                    rect.left ||
-                event.clientX >
-                    rect.right ||
-                event.clientY <
-                    hitTop ||
-                event.clientY >
-                    hitBottom
+                rect.width <= 0 ||
+                progressBar.offsetWidth <= 0
             ) {
-                tooltip.style.display =
-                    "none";
-
                 return;
             }
 
             /*
-             * 클릭 seek와 완전히 같은 계산식
+             * 재생바 실제 높이는 매우 얇으므로
+             * hover 영역은 위아래로 넓게 판정
              */
-            const x =
+            const hitTop =
+                rect.top - 20;
+
+            const hitBottom =
+                rect.bottom + 20;
+
+            if (
+                event.clientX < rect.left ||
+                event.clientX > rect.right ||
+                event.clientY < hitTop ||
+                event.clientY > hitBottom
+            ) {
+                return;
+            }
+
+            /*
+             * 예:
+             * 실제 보이는 폭 = 672
+             * 티빙 내부 폭 = 995
+             *
+             * scale ≈ 0.675
+             */
+            const scale =
+                rect.width /
+                progressBar.offsetWidth;
+
+            if (
+                !Number.isFinite(scale) ||
+                scale <= 0 ||
+                scale >= 0.999
+            ) {
+                return;
+            }
+
+            const visibleX =
                 event.clientX -
                 rect.left;
 
-            const ratio =
-                Math.max(
-                    0,
-                    Math.min(
-                        1,
-                        x / rect.width
-                    )
+            /*
+             * 티빙 내부 좌표계로 역보정
+             */
+            const correctedX =
+                rect.left +
+                visibleX / scale;
+
+            /*
+             * 잘못된 원래 mousemove는
+             * 티빙까지 보내지 않는다.
+             */
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+
+            const correctedEvent =
+                new MouseEvent(
+                    "mousemove",
+                    {
+                        bubbles: true,
+                        cancelable: true,
+
+                        clientX:
+                            correctedX,
+
+                        clientY:
+                            event.clientY,
+
+                        screenX:
+                            event.screenX,
+
+                        screenY:
+                            event.screenY,
+
+                        buttons:
+                            event.buttons,
+
+                        ctrlKey:
+                            event.ctrlKey,
+
+                        shiftKey:
+                            event.shiftKey,
+
+                        altKey:
+                            event.altKey,
+
+                        metaKey:
+                            event.metaKey
+                    }
                 );
 
-            const targetTime =
-                video.duration *
-                ratio;
-
-            tooltip.textContent =
-                formatTime(
-                    targetTime
-                );
-
-            tooltip.style.left =
-                `${event.clientX}px`;
-
-            tooltip.style.top =
-                `${
-                    Math.max(
-                        5,
-                        rect.top - 32
-                    )
-                }px`;
-
-            tooltip.style.display =
-                "block";
+            /*
+             * 티빙 원래 재생바에
+             * 보정된 마우스 이벤트 전달
+             */
+            progressBar.dispatchEvent(
+                correctedEvent
+            );
         },
         true
     );
-
-    window.addEventListener(
-        "mouseleave",
-        () => {
-            tooltip.style.display =
-                "none";
-        }
-    );
 }
 
-function checkTvingEpisodeChange() {
+function checkWavveEpisodeChange() {
     const currentUrl =
         window.location.href;
 
@@ -471,20 +416,25 @@ function checkTvingEpisodeChange() {
     lastPlayerUrl =
         currentUrl;
 
-    if (!isHost) {
-        return;
+        console.log(
+    "[TVP WAVVE] URL CHANGED",
+    previousUrl,
+    "→",
+    currentUrl,
+    "isHost:",
+    isHost
+);
+console.log(
+    "[TVP WAVVE] EPISODE CHECK",
+    {
+        previousUrl,
+        currentUrl,
+        isHost
     }
+);
 
-    const currentPath =
-        new URL(
-            currentUrl
-        ).pathname;
 
-    if (
-        !currentPath.startsWith(
-            "/player/"
-        )
-    ) {
+    if (!isHost) {
         return;
     }
 
@@ -493,8 +443,16 @@ function checkTvingEpisodeChange() {
     );
 
     episodeChangeTimer =
-        setTimeout(() => {
-            postToPanel({
+           setTimeout(() => {
+
+        console.log(
+            "[TVP WAVVE] episode detected",
+            previousUrl,
+            "→",
+            currentUrl
+        );
+
+        postToPanel({
                 type:
                     "TVP_LOCAL_EPISODE_CHANGE",
 
@@ -507,11 +465,24 @@ function checkTvingEpisodeChange() {
 }
 
     function postToPanel(message) {
-        frame?.contentWindow?.postMessage(
-            message,
-            "*"
-        );
-    }
+    console.log(
+        "[TVP WAVVE] postToPanel",
+        message?.type,
+        {
+            frameExists: Boolean(frame),
+            frameConnected:
+                Boolean(frame?.isConnected),
+            hasContentWindow:
+                Boolean(frame?.contentWindow),
+            message
+        }
+    );
+
+    frame?.contentWindow?.postMessage(
+        message,
+        "*"
+    );
+}
 
     function updatePlayerScale() {
         const player = findPlayer();
@@ -520,13 +491,36 @@ function checkTvingEpisodeChange() {
             return;
         }
 
-        const viewportWidth =
-            document.documentElement
-                .clientWidth;
+        player.style.removeProperty(
+            "z-index"
+        );
 
-        const viewportHeight =
-            document.documentElement
-                .clientHeight;
+        const wavveContainer =
+    document.getElementById(
+        "container"
+    );
+
+if (
+    wavveContainer?.classList.contains(
+        "fullscreen"
+    )
+) {
+    updateWavveFullscreenLayout();
+    return;
+}
+
+const container =
+    document.getElementById(
+        "container"
+    );
+
+const viewportWidth =
+    document.documentElement
+        .clientWidth;
+
+const viewportHeight =
+    document.documentElement
+        .clientHeight;
 
         const availableWidth =
             Math.max(
@@ -535,23 +529,13 @@ function checkTvingEpisodeChange() {
                     panelWidth
             );
 
-        const scale = Math.min(
-            1,
-            availableWidth /
-                viewportWidth
-        );
+        const scale = 1;
 
         const scaledHeight =
-            viewportHeight * scale;
+            viewportHeight;
 
         const verticalOffset =
-            Math.max(
-                0,
-                (
-                    viewportHeight -
-                    scaledHeight
-                ) / 2
-            );
+            0;
 
         player.style.setProperty(
             "position",
@@ -585,7 +569,7 @@ function checkTvingEpisodeChange() {
 
         player.style.setProperty(
             "width",
-            `${viewportWidth}px`,
+            `${availableWidth}px`,
             "important"
         );
 
@@ -643,11 +627,7 @@ function checkTvingEpisodeChange() {
             "important"
         );
 
-        player.style.setProperty(
-            "z-index",
-            "2147483000",
-            "important"
-        );
+    
 
         const video = findVideo();
 
@@ -688,8 +668,6 @@ function checkTvingEpisodeChange() {
                 "important"
             );
         }
-
-        
     }
 
     function scheduleScaleUpdate() {
@@ -714,6 +692,8 @@ function checkTvingEpisodeChange() {
 
         scheduleScaleUpdate();
     }
+
+
 
     function getPlayerState(
         action = "sync"
@@ -929,11 +909,13 @@ function handleVideoSeeked() {
         );
 
     adjustedTime +=
-    Math.min(
-        networkDelay,
-        2
-    ) + 0.5;
+        Math.min(
+            networkDelay,
+            2
+        );
 }
+
+        
 
 const adjustedDifference =
     Math.abs(
@@ -943,14 +925,36 @@ const adjustedDifference =
 
 if (
     action === "seek" ||
-    adjustedDifference > 1.0
+    adjustedDifference > 0.25
 ) {
-    try {
-        video.currentTime =
-            Math.max(
-                0,
-                adjustedTime
-            );
+try {
+    const requestedTime =
+        Math.max(
+            0,
+            adjustedTime
+        );
+
+    video.currentTime =
+        requestedTime;
+
+    setTimeout(() => {
+
+
+
+
+    console.log(
+        "[TVP WAVVE SYNC CHECK]",
+        {
+            requestedTime,
+            actualTime:
+                video.currentTime,
+            difference:
+                video.currentTime -
+                requestedTime
+        }
+    );
+}, 500);
+
     } catch (error) {
         console.warn(
             "TVP 시간 이동 실패:",
@@ -1039,6 +1043,16 @@ if (
             chrome.runtime.getURL(
                 "panel.html"
             );
+
+            frame.addEventListener(
+    "load",
+    () => {
+        console.log(
+            "[TVP WAVVE] PANEL IFRAME LOADED",
+            new Date().toLocaleTimeString()
+        );
+    }
+);
 
         frame.title =
             "TVP Watch Party";
@@ -1136,7 +1150,20 @@ frame.style.setProperty(
             "important"
         );
 
-document.body.appendChild(frame);
+const watchRoot =
+    document.querySelector(
+        '[data-uia="watch-video"]'
+    );
+
+if (watchRoot) {
+    watchRoot.appendChild(
+        frame
+    );
+} else {
+    document.documentElement.appendChild(
+        frame
+    );
+}
 
         panelWidth = PANEL_WIDTH;
 
@@ -1193,20 +1220,25 @@ document.body.appendChild(frame);
         restorePlayer();
     }
     
+    setInterval(
+    checkWavveEpisodeChange,
+    250
+);
+
 const observer =
     new MutationObserver(() => {
-        checkTvingEpisodeChange();
-
+        checkWavveEpisodeChange();
         if (findVideo()) {
             createPanel();
             attachVideoEvents();
-            scheduleScaleUpdate();
 
             if (
-                document.body.classList.contains(
-                    "fullscreen"
-                )
-            ) {
+    document
+        .getElementById("container")
+        ?.classList.contains(
+            "fullscreen"
+        )
+) {
                 frame?.style.setProperty(
                     "display",
                     "block",
@@ -1214,9 +1246,14 @@ const observer =
                 );
             }
 
-        } else if (frame) {
-            removePanel();
-        }
+       } else if (
+    frame &&
+    !/^\/watch\/\d+/.test(
+        window.location.pathname
+    )
+) {
+    removePanel();
+}
     });
 
     observer.observe(
@@ -1234,32 +1271,251 @@ const observer =
         scheduleScaleUpdate
     );
 
-    document.addEventListener(
-    "fullscreenchange",
-    () => {
-        setTimeout(() => {
-            if (frame) {
-                frame.style.setProperty(
-                    "display",
-                    "block",
-                    "important"
-                );
 
-                frame.style.setProperty(
-                    "position",
-                    "fixed",
-                    "important"
-                );
-
-                frame.style.setProperty(
-                    "z-index",
-                    "2147483647",
-                    "important"
-                );
-            }
-        }, 300);
+    function updateWavveFullscreenLayout() {
+    if (!frame) {
+        return;
     }
+
+    const container =
+        document.getElementById(
+            "container"
+        );
+
+    if (
+        !container ||
+        !container.classList.contains(
+            "fullscreen"
+        )
+    ) {
+        return;
+    }
+
+    const videoLayer =
+        container.querySelector(
+            ".player_container"
+        );
+
+    const uiLayer =
+        container.querySelector(
+            ".ui_container"
+        );
+
+
+
+    frame.style.setProperty(
+        "position",
+        "absolute",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "top",
+        "0",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "right",
+        "0",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "width",
+        `${panelWidth}px`,
+        "important"
+    );
+
+    frame.style.setProperty(
+        "height",
+        "100%",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "transform",
+        "none",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "z-index",
+        "2147483647",
+        "important"
+    );
+
+    [
+        videoLayer,
+        uiLayer
+    ]
+        .filter(Boolean)
+        .forEach((element) => {
+            element.style.setProperty(
+                "width",
+                `calc(100% - ${panelWidth}px)`,
+                "important"
+            );
+
+            element.style.setProperty(
+                "height",
+                "100%",
+                "important"
+            );
+
+            element.style.setProperty(
+                "left",
+                "0",
+                "important"
+            );
+
+            element.style.setProperty(
+                "right",
+                "auto",
+                "important"
+            );
+
+            element.style.setProperty(
+                "transform",
+                "none",
+                "important"
+            );
+        });
+}
+
+function restoreWavveFullscreenLayout() {
+    if (!frame) {
+        return;
+    }
+
+    const container =
+        document.getElementById(
+            "container"
+        );
+
+    const videoLayer =
+        container?.querySelector(
+            ".player_container"
+        );
+
+    const uiLayer =
+        container?.querySelector(
+            ".ui_container"
+        );
+
+    [
+        videoLayer,
+        uiLayer
+    ]
+        .filter(Boolean)
+        .forEach((element) => {
+            [
+                "width",
+                "height",
+                "left",
+                "right",
+                "transform"
+            ].forEach((property) => {
+                element.style.removeProperty(
+                    property
+                );
+            });
+        });
+
+    
+frame.style.setProperty(
+    "width",
+    `${panelWidth}px`,
+    "important"
 );
+
+    frame.style.setProperty(
+        "position",
+        "fixed",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "top",
+        "0",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "right",
+        "0",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "height",
+        "100vh",
+        "important"
+    );
+
+    scheduleScaleUpdate();
+}
+let lastWavveFullscreenState = null;
+
+const wavveFullscreenObserver =
+    new MutationObserver(() => {
+        const container =
+            document.getElementById(
+                "container"
+            );
+
+        if (!container) {
+            return;
+        }
+
+        const isFullscreen =
+            container.classList.contains(
+                "fullscreen"
+            );
+
+        /*
+         * 전체화면 상태가 실제로 바뀐 경우에만
+         * 레이아웃을 한 번 수정한다.
+         */
+        if (
+            isFullscreen ===
+            lastWavveFullscreenState
+        ) {
+            return;
+        }
+
+        lastWavveFullscreenState =
+            isFullscreen;
+
+        if (isFullscreen) {
+            updateWavveFullscreenLayout();
+        } else {
+            restoreWavveFullscreenLayout();
+        }
+    });
+
+const wavveContainer =
+    document.getElementById(
+        "container"
+    );
+
+if (wavveContainer) {
+    lastWavveFullscreenState =
+        wavveContainer.classList.contains(
+            "fullscreen"
+        );
+
+    wavveFullscreenObserver.observe(
+        wavveContainer,
+        {
+            attributes: true,
+            attributeFilter: [
+                "class"
+            ]
+        }
+    );
+}
+
 
     window.addEventListener(
         "message",
@@ -1293,11 +1549,11 @@ if (type === "TVP_REQUEST_INVITE_ROOM") {
             "tvpNickname"
         );
 
-        const savedWasHost =
-    sessionStorage.getItem(
-        "tvpWasHost"
-    ) === "true";
-    
+    const savedWasHost =
+        sessionStorage.getItem(
+            "tvpWasHost"
+        ) === "true";
+
     const roomCode =
         urlRoomCode ||
         savedRoomCode ||
@@ -1305,18 +1561,19 @@ if (type === "TVP_REQUEST_INVITE_ROOM") {
 
     if (roomCode) {
         postToPanel({
-    type:
-        "TVP_INVITE_ROOM_FOUND",
-    roomCode,
-    nickname:
-        savedNickname || "",
-    wasHost:
-        savedWasHost
-});
+            type:
+                "TVP_INVITE_ROOM_FOUND",
+            roomCode,
+            nickname:
+                savedNickname || "",
+            wasHost:
+                savedWasHost
+        });
     }
 
     return;
 }
+   
 if (type === "TVP_SET_ACTIVE_ROOM") {
     const roomCode =
         String(
@@ -1356,6 +1613,7 @@ if (type === "TVP_SET_ACTIVE_ROOM") {
 
     return;
 }
+
 if (type === "TVP_REQUEST_INVITE_LINK") {
 const roomCode = event.data.roomCode;
 
@@ -1413,8 +1671,23 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
                 type ===
                 "TVP_SET_HOST_STATUS"
             ) {
+                console.log(
+    "[TVP WAVVE] HOST STATUS RECEIVED:",
+    event.data.isHost
+);
                 isHost = Boolean(
                     event.data.isHost
+                );
+
+                return;
+            }
+
+            if (
+                type ===
+                "TVP_APPLY_PLAYER_EVENT"
+            ) {
+                await applyPlayerEvent(
+                    event.data.data
                 );
 
                 return;
@@ -1424,6 +1697,11 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
     type ===
     "TVP_APPLY_EPISODE_CHANGE"
 ) {
+    console.log(
+    "[TVP WAVVE] apply episode received",
+    event.data?.url
+);
+
     const url =
         String(
             event.data?.url || ""
@@ -1434,8 +1712,8 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
     }
 
     /*
-     * HOST 자신은 이동 명령을 받지 않지만
-     * 혹시 모를 중복 이동 방지
+     * HOST는 서버에서 자기 이벤트를
+     * 다시 받지 않지만 중복 이동 방지
      */
     if (isHost) {
         return;
@@ -1448,8 +1726,7 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
         );
 
     /*
-     * 참가자가 현재 들어와 있는
-     * TVP 방 코드는 유지한다.
+     * 현재 TVP 방 코드 유지
      */
     const currentRoomCode =
         new URL(
@@ -1465,22 +1742,27 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
         );
     }
 
-    window.location.href =
-        targetUrl.toString();
+const nextUrl =
+    targetUrl.toString();
+
+history.pushState(
+    {},
+    "",
+    nextUrl
+);
+
+window.dispatchEvent(
+    new PopStateEvent(
+        "popstate",
+        {
+            state:
+                history.state
+        }
+    )
+);
 
     return;
 }
-
-            if (
-                type ===
-                "TVP_APPLY_PLAYER_EVENT"
-            ) {
-                await applyPlayerEvent(
-                    event.data.data
-                );
-
-                return;
-            }
 
             if (
                 type ===
