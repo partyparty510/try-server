@@ -576,6 +576,7 @@ body.tvp-collapsed .tvp-expand-button {
 }
 
 .chat-message-content {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -757,14 +758,16 @@ body.tvp-collapsed .tvp-expand-button {
     justify-content: flex-end;
 }
 .chat-reply-button {
-    margin-top: 3px;
-    padding: 2px 5px;
+    position: absolute;
+    top: 24px;
+
+    padding: 3px 5px;
 
     border: 0;
     background: transparent;
-    color: #666;
+    color: #777;
 
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1;
 
     cursor: pointer;
@@ -773,14 +776,24 @@ body.tvp-collapsed .tvp-expand-button {
     transition: opacity 0.15s ease;
 }
 
+/* 상대 메시지 → 말풍선 오른쪽 */
+.chat-message-row:not(.chat-message-row--mine)
+.chat-reply-button {
+    left: 100%;
+    margin-left: 4px;
+}
+
+/* 내 메시지 → 말풍선 왼쪽 */
+.chat-message-row--mine
+.chat-reply-button {
+    right: 100%;
+    margin-right: 4px;
+}
+
 .chat-message-row:hover .chat-reply-button {
     opacity: 1;
 }
 
 .chat-reply-button:hover {
     color: #bbb;
-}
-
-.chat-message-row--mine .chat-reply-button {
-    align-self: flex-end;
 }
