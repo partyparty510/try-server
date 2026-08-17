@@ -414,6 +414,25 @@ socket.on("chat message", (data) => {
         data?.message || ""
     ).trim();
 
+    const replyTo =
+    data?.replyTo &&
+    typeof data.replyTo === "object"
+        ? {
+            socketId: String(
+                data.replyTo.socketId || ""
+            ),
+            nickname: String(
+                data.replyTo.nickname || ""
+            ),
+            message: String(
+                data.replyTo.message || ""
+            ),
+            emoji: String(
+                data.replyTo.emoji || "🙂"
+            )
+        }
+        : null;
+
     if (
         !roomCode ||
         !nickname ||
@@ -473,7 +492,9 @@ socket.on("chat message", (data) => {
                 participant.emoji,
 
             color:
-                participant.color
+    participant.color,
+
+replyTo
         }
     );
 });

@@ -51,6 +51,26 @@ const participantPopup = document.getElementById("participant-popup");
     const messageInput = document.getElementById("message-input");
     const sendButton = document.getElementById("send-button");
 
+    const replyPreview =
+    document.getElementById(
+        "reply-preview"
+    );
+
+const replyPreviewNickname =
+    document.getElementById(
+        "reply-preview-nickname"
+    );
+
+const replyPreviewMessage =
+    document.getElementById(
+        "reply-preview-message"
+    );
+
+const replyCancelButton =
+    document.getElementById(
+        "reply-cancel-button"
+    );
+
     const collapseButton = document.getElementById("tvp-collapse-button");
     const expandButton = document.getElementById("tvp-expand-button");
     const closeButton = document.getElementById("tvp-close-button");
@@ -59,6 +79,7 @@ const participantPopup = document.getElementById("participant-popup");
     let currentRoom = "";
     let currentNickname = "";
     let inviteRoomCode = "";
+    let currentReplyTo = null;
 
     function showJoinScreen() {
         joinSection.hidden = false;
@@ -127,6 +148,36 @@ function requireNickname() {
     messageList.parentElement.scrollHeight;
     }
 
+    function selectReply(data) {
+    currentReplyTo = {
+        socketId:
+            data.socketId || "",
+        nickname:
+            data.nickname || "알 수 없음",
+        message:
+            data.message || "",
+        emoji:
+            data.emoji || "🙂"
+    };
+
+    replyPreviewNickname.textContent =
+        `${currentReplyTo.emoji} ${currentReplyTo.nickname}`;
+
+    replyPreviewMessage.textContent =
+        currentReplyTo.message;
+
+    replyPreview.hidden = false;
+
+    messageInput.focus();
+}
+
+function cancelReply() {
+    currentReplyTo = null;
+    replyPreview.hidden = true;
+    replyPreviewNickname.textContent = "";
+    replyPreviewMessage.textContent = "";
+}
+
 function showChatMessage(data) {
     const messageList =
         document.getElementById("message-list");
@@ -190,6 +241,29 @@ if (isMyMessage) {
     messageBubble.textContent =
         data.message || "";
 
+        const replyButton =
+    document.createElement("button");
+
+replyButton.type =
+    "button";
+
+replyButton.className =
+    "chat-reply-button";
+
+replyButton.textContent =
+    "↩";
+
+replyButton.title =
+    "답글";
+
+replyButton.addEventListener(
+    "click",
+    (event) => {
+        event.stopPropagation();
+        selectReply(data);
+    }
+);
+
     if (data.color) {
         messageBubble.style.backgroundColor =
             data.color;
@@ -199,9 +273,51 @@ if (isMyMessage) {
         nicknameElement
     );
 
+    if (data.replyTo) {
+    const replyReference =
+        document.createElement("div");
+
+    replyReference.className =
+        "chat-reply-reference";
+
+    const replyNickname =
+        document.createElement("span");
+
+    replyNickname.className =
+        "chat-reply-reference-nickname";
+
+    replyNickname.textContent =
+        `${data.replyTo.emoji || "🙂"} ${data.replyTo.nickname || "알 수 없음"}`;
+
+    const replyMessage =
+        document.createElement("span");
+
+    replyMessage.className =
+        "chat-reply-reference-message";
+
+    replyMessage.textContent =
+        data.replyTo.message || "";
+
+    replyReference.appendChild(
+        replyNickname
+    );
+
+    replyReference.appendChild(
+        replyMessage
+    );
+
+    messageContent.appendChild(
+        replyReference
+    );
+}
+
     messageContent.appendChild(
         messageBubble
     );
+
+    messageContent.appendChild(
+    replyButton
+);
 
     messageRow.appendChild(
         emojiElement
@@ -414,13 +530,28 @@ function createRoom() {
         }
 
         socket.emit("chat message", {
-            roomCode: currentRoom,
-            nickname: currentNickname,
-            message
-        });
+    roomCode: currentRoom,
+    nickname: currentNickname,
+    message,
+    replyTo: currentReplyTo
+        ? {
+            socketId:
+                currentReplyTo.socketId,
+            nickname:
+                currentReplyTo.nickname,
+            message:
+                currentReplyTo.message,
+            emoji:
+                currentReplyTo.emoji
+        }
+        : null
+});
 
         messageInput.value = "";
-        messageInput.focus();
+
+cancelReply();
+
+messageInput.focus();
     }
 
     if (typeof io !== "function") {
@@ -600,6 +731,13 @@ nicknameInput.addEventListener(
 
     joinButton.addEventListener("click", joinRoom);
     createRoomButton.addEventListener("click", createRoom);
+    replyCancelButton.addEventListener(
+    "click",
+    () => {
+        cancelReply();
+    }
+);
+
     sendButton.addEventListener("click", (event) => {
     event.preventDefault();
     sendMessage();
