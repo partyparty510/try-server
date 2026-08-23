@@ -9,6 +9,8 @@
     let panelWidth = PANEL_WIDTH;
     let collapsed = false;
     let updateTimer = null;
+    let collapsedExpandButton = null;
+    let playerBlackBackdrop = null;
 
     let currentVideo = null;
     let isHost = false;
@@ -1152,6 +1154,388 @@ if (
                 );
             }, 5000);
     }
+function createCollapsedExpandButton() {
+    if (
+        collapsedExpandButton &&
+        collapsedExpandButton.isConnected
+    ) {
+        return collapsedExpandButton;
+    }
+
+    const button =
+        document.createElement(
+            "button"
+        );
+
+    button.id =
+        "tvp-collapsed-expand-button";
+
+    button.type =
+        "button";
+
+    button.textContent =
+    "";
+
+const arrow =
+    document.createElement(
+        "span"
+    );
+
+arrow.style.setProperty(
+    "position",
+    "absolute",
+    "important"
+);
+
+arrow.style.setProperty(
+    "left",
+    "50%",
+    "important"
+);
+
+arrow.style.setProperty(
+    "top",
+    "50%",
+    "important"
+);
+
+arrow.style.setProperty(
+    "width",
+    "8px",
+    "important"
+);
+
+arrow.style.setProperty(
+    "height",
+    "8px",
+    "important"
+);
+
+arrow.style.setProperty(
+    "border-left",
+    "2px solid #ffffff",
+    "important"
+);
+
+arrow.style.setProperty(
+    "border-bottom",
+    "2px solid #ffffff",
+    "important"
+);
+
+arrow.style.setProperty(
+    "transform",
+    "translate(-50%, -50%) rotate(45deg)",
+    "important"
+);
+
+arrow.style.setProperty(
+    "transform-origin",
+    "center",
+    "important"
+);
+
+arrow.style.setProperty(
+    "box-sizing",
+    "border-box",
+    "important"
+);
+
+arrow.style.setProperty(
+    "pointer-events",
+    "none",
+    "important"
+);
+
+button.appendChild(
+    arrow
+);
+
+    button.title =
+        "채팅창 열기";
+
+    button.style.setProperty(
+        "position",
+        "fixed",
+        "important"
+    );
+
+button.style.setProperty(
+    "top",
+    "15px",
+    "important"
+);
+
+button.style.setProperty(
+    "right",
+    "12px",
+    "important"
+);
+
+button.style.setProperty(
+    "transform",
+    "none",
+    "important"
+);
+
+button.style.setProperty(
+    "width",
+    "34px",
+    "important"
+);
+
+button.style.setProperty(
+    "height",
+    "34px",
+    "important"
+);
+
+    button.style.setProperty(
+        "padding",
+        "0",
+        "important"
+    );
+
+    button.style.setProperty(
+        "margin",
+        "0",
+        "important"
+    );
+
+    button.style.setProperty(
+        "border",
+        "0",
+        "important"
+    );
+
+    button.style.setProperty(
+    "border-radius",
+    "8px",
+    "important"
+);
+
+button.style.setProperty(
+    "background",
+    "#292929",
+    "important"
+);
+
+button.style.setProperty(
+    "color",
+    "#ffffff",
+    "important"
+);
+
+button.style.setProperty(
+    "display",
+    "flex",
+    "important"
+);
+
+button.style.setProperty(
+    "align-items",
+    "center",
+    "important"
+);
+
+button.style.setProperty(
+    "justify-content",
+    "center",
+    "important"
+);
+
+button.style.setProperty(
+    "font-size",
+    "21px",
+    "important"
+);
+
+button.style.setProperty(
+    "font-family",
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif",
+    "important"
+);
+
+button.style.setProperty(
+    "font-weight",
+    "400",
+    "important"
+);
+
+button.style.setProperty(
+    "line-height",
+    "1",
+    "important"
+);
+
+button.style.setProperty(
+    "text-align",
+    "center",
+    "important"
+);
+
+button.style.setProperty(
+    "cursor",
+    "pointer",
+    "important"
+);
+
+    button.style.setProperty(
+        "z-index",
+        "2147483647",
+        "important"
+    );
+
+    button.style.setProperty(
+        "display",
+        "none",
+        "important"
+    );
+
+    button.addEventListener(
+    "mouseenter",
+    () => {
+        button.style.setProperty(
+            "background",
+            "#383838",
+            "important"
+        );
+    }
+);
+
+button.addEventListener(
+    "mouseleave",
+    () => {
+        button.style.setProperty(
+            "background",
+            "#292929",
+            "important"
+        );
+    }
+);
+
+    button.addEventListener(
+        "click",
+        () => {
+            collapsed = false;
+            panelWidth = PANEL_WIDTH;
+
+            if (frame) {
+                frame.style.setProperty(
+                    "width",
+                    `${PANEL_WIDTH}px`,
+                    "important"
+                );
+
+                frame.style.setProperty(
+                    "display",
+                    "block",
+                    "important"
+                );
+            }
+
+            button.style.setProperty(
+                "display",
+                "none",
+                "important"
+            );
+
+            scheduleScaleUpdate();
+
+            postToPanel({
+                type:
+                    "TVP_FORCE_EXPANDED"
+            });
+        }
+    );
+
+    document.body.appendChild(
+        button
+    );
+
+    collapsedExpandButton =
+        button;
+
+    return button;
+}
+
+function ensurePlayerBlackBackdrop() {
+    if (
+        playerBlackBackdrop &&
+        playerBlackBackdrop.isConnected
+    ) {
+        return playerBlackBackdrop;
+    }
+
+    const backdrop =
+        document.createElement(
+            "div"
+        );
+
+    backdrop.id =
+        "tvp-player-black-backdrop";
+
+    backdrop.style.setProperty(
+        "position",
+        "fixed",
+        "important"
+    );
+
+    backdrop.style.setProperty(
+        "left",
+        "0",
+        "important"
+    );
+
+    backdrop.style.setProperty(
+        "bottom",
+        "0",
+        "important"
+    );
+
+    backdrop.style.setProperty(
+        "width",
+        `calc(100vw - ${panelWidth}px)`,
+        "important"
+    );
+
+    backdrop.style.setProperty(
+        "height",
+        "50vh",
+        "important"
+    );
+
+    backdrop.style.setProperty(
+        "background",
+        "#000000",
+        "important"
+    );
+
+    backdrop.style.setProperty(
+        "pointer-events",
+        "none",
+        "important"
+    );
+
+    /*
+     * 티빙 페이지보다 위,
+     * 실제 플레이어보다 아래.
+     */
+    backdrop.style.setProperty(
+        "z-index",
+        "1",
+        "important"
+    );
+
+    document.body.appendChild(
+        backdrop
+    );
+
+    playerBlackBackdrop =
+        backdrop;
+
+    return backdrop;
+}
 
     function createPanel() {
         if (
@@ -1274,12 +1658,13 @@ frame.style.setProperty(
 
 document.body.appendChild(frame);
 
-        panelWidth = PANEL_WIDTH;
+panelWidth = PANEL_WIDTH;
 
+ensurePlayerBlackBackdrop();
 
-        attachVideoEvents();
-        updatePlayerScale();
-        startPeriodicSync();
+attachVideoEvents();
+updatePlayerScale();
+startPeriodicSync();
     }
 
     function restorePlayer() {
@@ -1339,16 +1724,18 @@ const observer =
             scheduleScaleUpdate();
 
             if (
-                document.body.classList.contains(
-                    "fullscreen"
-                )
-            ) {
-                frame?.style.setProperty(
-                    "display",
-                    "block",
-                    "important"
-                );
-            }
+    document.body.classList.contains(
+        "fullscreen"
+    )
+) {
+    frame?.style.setProperty(
+        "display",
+        collapsed
+            ? "none"
+            : "block",
+        "important"
+    );
+}
 
         } else if (frame) {
             removePanel();
@@ -1370,14 +1757,20 @@ const observer =
         scheduleScaleUpdate
     );
 
-    document.addEventListener(
+   document.addEventListener(
     "fullscreenchange",
     () => {
-        setTimeout(() => {
-            if (frame) {
+        setTimeout(
+            () => {
+                if (!frame) {
+                    return;
+                }
+
                 frame.style.setProperty(
                     "display",
-                    "block",
+                    collapsed
+                        ? "none"
+                        : "block",
                     "important"
                 );
 
@@ -1392,8 +1785,23 @@ const observer =
                     "2147483647",
                     "important"
                 );
-            }
-        }, 300);
+
+                if (
+                    collapsedExpandButton
+                ) {
+                    collapsedExpandButton.style.setProperty(
+                        "display",
+                        collapsed
+                            ? "block"
+                            : "none",
+                        "important"
+                    );
+                }
+
+                scheduleScaleUpdate();
+            },
+            300
+        );
     }
 );
 
@@ -1442,33 +1850,66 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
     return;
 }
     
-            if (
-                type ===
-                "TVP_COLLAPSE"
-            ) {
-                collapsed = true;
+if (
+    type ===
+    "TVP_COLLAPSE"
+) {
+    collapsed = true;
+    panelWidth = 0;
 
-                setPanelWidth(
-                    COLLAPSED_WIDTH
-                );
-                
-                
-                return;
-            }
+    frame.style.setProperty(
+        "display",
+        "none",
+        "important"
+    );
 
-            if (
-                type ===
-                "TVP_EXPAND"
-            ) {
-                collapsed = false;
+    const button =
+        createCollapsedExpandButton();
 
-                setPanelWidth(
-                    PANEL_WIDTH
-                );
+    button.style.setProperty(
+        "display",
+        "block",
+        "important"
+    );
 
-                
-                return;
-            }
+    scheduleScaleUpdate();
+
+    return;
+}
+
+if (
+    type ===
+    "TVP_EXPAND"
+) {
+    collapsed = false;
+    panelWidth = PANEL_WIDTH;
+
+    frame.style.setProperty(
+        "width",
+        `${PANEL_WIDTH}px`,
+        "important"
+    );
+
+    frame.style.setProperty(
+        "display",
+        "block",
+        "important"
+    );
+
+    if (
+        collapsedExpandButton
+    ) {
+        collapsedExpandButton.style.setProperty(
+            "display",
+            "none",
+            "important"
+        );
+    }
+
+    scheduleScaleUpdate();
+
+    return;
+}
 
             if (
                 type ===

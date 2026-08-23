@@ -995,6 +995,27 @@ window.addEventListener("message", async (event) => {
 
     return;
 }
+if (
+    type ===
+    "TVP_REQUEST_HOST_PLAYER_STATE"
+) {
+    if (
+        !socket?.connected ||
+        !currentRoom
+    ) {
+        return;
+    }
+
+    socket.emit(
+        "request player state",
+        {
+            roomCode:
+                currentRoom
+        }
+    );
+
+    return;
+}
 
 if (type === "TVP_LOCAL_EPISODE_CHANGE") {
     console.log(

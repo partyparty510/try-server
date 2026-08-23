@@ -58,7 +58,7 @@ button {
 }
 
 .tvp-logo-icon {
-    font-size: 14px;
+    font-size: 12px;
      white-space: nowrap;
 }
 
@@ -796,4 +796,32 @@ body.tvp-collapsed .tvp-expand-button {
 
 .chat-reply-button:hover {
     color: #bbb;
+}
+
+.tvp-contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    color: #8f8f8f;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1;
+
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tvp-contact-link:hover {
+    color: #ffffff;
+}
+
+.tvp-x-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #ffffff;
+    font-size: 13px;
+    line-height: 1;
 }

@@ -9,6 +9,7 @@
     let panelWidth = PANEL_WIDTH;
     let collapsed = false;
     let updateTimer = null;
+let collapsedExpandButton = null;
 
     let currentVideo = null;
     let isHost = false;
@@ -26,6 +27,8 @@
     window.location.href;
 
 let episodeChangeTimer = null;
+let episodeResyncTimer = null;
+let episodeResyncStartedAt = 0;
 
     if (
         document.getElementById(
@@ -846,6 +849,69 @@ function handleVideoSeeked() {
         );
     }
 
+    function scheduleEpisodeResync() {
+    clearTimeout(
+        episodeResyncTimer
+    );
+
+    episodeResyncStartedAt =
+        Date.now();
+
+    const waitForNewVideo = () => {
+        const video =
+            findVideo();
+
+        /*
+         * 새 에피소드 video가 아직 없거나
+         * metadata가 준비되지 않았으면 대기
+         */
+        if (
+            !video ||
+            video.readyState < 1 ||
+            !Number.isFinite(
+                Number(video.duration)
+            ) ||
+            Number(video.duration) <= 0
+        ) {
+            if (
+                Date.now() -
+                    episodeResyncStartedAt <
+                15000
+            ) {
+                episodeResyncTimer =
+                    setTimeout(
+                        waitForNewVideo,
+                        250
+                    );
+            }
+
+            return;
+        }
+
+        /*
+         * video element가 확인된 뒤에도
+         * 웨이브가 내부 재생 상태를 한 번 더
+         * 초기화할 시간을 준다.
+         */
+        episodeResyncTimer =
+            setTimeout(
+                () => {
+                    postToPanel({
+                        type:
+                            "TVP_REQUEST_HOST_PLAYER_STATE"
+                    });
+                },
+                800
+            );
+    };
+
+    episodeResyncTimer =
+        setTimeout(
+            waitForNewVideo,
+            250
+        );
+}
+
     async function applyPlayerEvent(
         data
     ) {
@@ -1012,6 +1078,326 @@ try {
                     "sync"
                 );
             }, 5000);
+    }
+
+    function createCollapsedExpandButton() {
+    if (
+        collapsedExpandButton &&
+        collapsedExpandButton.isConnected
+    ) {
+        return collapsedExpandButton;
+    }
+
+    const button =
+        document.createElement(
+            "button"
+        );
+
+    button.id =
+        "tvp-collapsed-expand-button";
+
+    button.type =
+        "button";
+
+    button.textContent =
+    "";
+
+const arrow =
+    document.createElement(
+        "span"
+    );
+
+arrow.style.setProperty(
+    "position",
+    "absolute",
+    "important"
+);
+
+arrow.style.setProperty(
+    "left",
+    "50%",
+    "important"
+);
+
+arrow.style.setProperty(
+    "top",
+    "50%",
+    "important"
+);
+
+arrow.style.setProperty(
+    "width",
+    "8px",
+    "important"
+);
+
+arrow.style.setProperty(
+    "height",
+    "8px",
+    "important"
+);
+
+arrow.style.setProperty(
+    "border-left",
+    "2px solid #ffffff",
+    "important"
+);
+
+arrow.style.setProperty(
+    "border-bottom",
+    "2px solid #ffffff",
+    "important"
+);
+
+arrow.style.setProperty(
+    "transform",
+    "translate(-50%, -50%) rotate(45deg)",
+    "important"
+);
+
+arrow.style.setProperty(
+    "transform-origin",
+    "center",
+    "important"
+);
+
+arrow.style.setProperty(
+    "box-sizing",
+    "border-box",
+    "important"
+);
+
+arrow.style.setProperty(
+    "pointer-events",
+    "none",
+    "important"
+);
+
+button.appendChild(
+    arrow
+);
+
+    button.title =
+        "채팅창 열기";
+
+    button.style.setProperty(
+        "position",
+        "fixed",
+        "important"
+    );
+
+    button.style.setProperty(
+    "top",
+    "15px",
+    "important"
+);
+
+button.style.setProperty(
+    "right",
+    "12px",
+    "important"
+);
+
+button.style.setProperty(
+    "transform",
+    "none",
+    "important"
+);
+
+button.style.setProperty(
+    "width",
+    "34px",
+    "important"
+);
+
+button.style.setProperty(
+    "height",
+    "34px",
+    "important"
+);
+
+    button.style.setProperty(
+        "padding",
+        "0",
+        "important"
+    );
+
+    button.style.setProperty(
+        "margin",
+        "0",
+        "important"
+    );
+
+    button.style.setProperty(
+        "border",
+        "0",
+        "important"
+    );
+
+    button.style.setProperty(
+    "border-radius",
+    "8px",
+    "important"
+);
+
+button.style.setProperty(
+    "background",
+    "#292929",
+    "important"
+);
+
+button.style.setProperty(
+    "color",
+    "#ffffff",
+    "important"
+);
+
+button.style.setProperty(
+    "display",
+    "flex",
+    "important"
+);
+
+button.style.setProperty(
+    "align-items",
+    "center",
+    "important"
+);
+
+button.style.setProperty(
+    "justify-content",
+    "center",
+    "important"
+);
+
+button.style.setProperty(
+    "font-size",
+    "21px",
+    "important"
+);
+
+button.style.setProperty(
+    "font-family",
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif",
+    "important"
+);
+
+button.style.setProperty(
+    "font-weight",
+    "400",
+    "important"
+);
+
+button.style.setProperty(
+    "line-height",
+    "1",
+    "important"
+);
+
+button.style.setProperty(
+    "text-align",
+    "center",
+    "important"
+);
+
+button.style.setProperty(
+    "cursor",
+    "pointer",
+    "important"
+);
+
+    button.style.setProperty(
+        "z-index",
+        "2147483647",
+        "important"
+    );
+
+    button.style.setProperty(
+        "display",
+        "none",
+        "important"
+    );
+
+    button.addEventListener(
+    "mouseenter",
+    () => {
+        button.style.setProperty(
+            "background",
+            "#383838",
+            "important"
+        );
+    }
+);
+
+button.addEventListener(
+    "mouseleave",
+    () => {
+        button.style.setProperty(
+            "background",
+            "#292929",
+            "important"
+        );
+    }
+);
+
+    button.addEventListener(
+        "click",
+        () => {
+            collapsed = false;
+            panelWidth = PANEL_WIDTH;
+
+            if (frame) {
+                frame.style.setProperty(
+                    "width",
+                    `${PANEL_WIDTH}px`,
+                    "important"
+                );
+
+                frame.style.setProperty(
+                    "display",
+                    "block",
+                    "important"
+                );
+            }
+
+            button.style.setProperty(
+                "display",
+                "none",
+                "important"
+            );
+
+            scheduleScaleUpdate();
+
+            postToPanel({
+                type:
+                    "TVP_FORCE_EXPANDED"
+            });
+        }
+    );
+
+    const wavveContainer =
+    document.getElementById(
+        "container"
+    );
+
+if (
+    wavveContainer?.classList.contains(
+        "fullscreen"
+    )
+) {
+    wavveContainer.appendChild(
+        button
+    );
+} else {
+    document.body.appendChild(
+        button
+    );
+}
+
+collapsedExpandButton =
+    button;
+
+return button;
     }
 
     function createPanel() {
@@ -1253,7 +1639,7 @@ const observer =
         scheduleScaleUpdate
     );
 
-    function updateWavveFullscreenLayout() {
+function updateWavveFullscreenLayout() {
     if (!frame) {
         return;
     }
@@ -1282,7 +1668,19 @@ const observer =
             ".ui_container"
         );
 
-
+    /*
+     * fullscreen top layer 안에서
+     * TVP iframe이 보이도록
+     * #container 내부로 이동
+     */
+    if (
+        frame.parentElement !==
+        container
+    ) {
+        container.appendChild(
+            frame
+        );
+    }
 
     frame.style.setProperty(
         "position",
@@ -1303,6 +1701,18 @@ const observer =
     );
 
     frame.style.setProperty(
+        "bottom",
+        "0",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "left",
+        "auto",
+        "important"
+    );
+
+    frame.style.setProperty(
         "width",
         `${panelWidth}px`,
         "important"
@@ -1311,6 +1721,24 @@ const observer =
     frame.style.setProperty(
         "height",
         "100%",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "display",
+        "block",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "visibility",
+        "visible",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "opacity",
+        "1",
         "important"
     );
 
@@ -1326,6 +1754,12 @@ const observer =
         "important"
     );
 
+    frame.style.setProperty(
+        "pointer-events",
+        "auto",
+        "important"
+    );
+
     [
         videoLayer,
         uiLayer
@@ -1334,6 +1768,12 @@ const observer =
         .forEach((element) => {
             element.style.setProperty(
                 "width",
+                `calc(100% - ${panelWidth}px)`,
+                "important"
+            );
+
+            element.style.setProperty(
+                "max-width",
                 `calc(100% - ${panelWidth}px)`,
                 "important"
             );
@@ -1359,6 +1799,12 @@ const observer =
             element.style.setProperty(
                 "transform",
                 "none",
+                "important"
+            );
+
+            element.style.setProperty(
+                "box-sizing",
+                "border-box",
                 "important"
             );
         });
@@ -1392,10 +1838,12 @@ function restoreWavveFullscreenLayout() {
         .forEach((element) => {
             [
                 "width",
+                "max-width",
                 "height",
                 "left",
                 "right",
-                "transform"
+                "transform",
+                "box-sizing"
             ].forEach((property) => {
                 element.style.removeProperty(
                     property
@@ -1403,12 +1851,18 @@ function restoreWavveFullscreenLayout() {
             });
         });
 
-    
-frame.style.setProperty(
-    "width",
-    `${panelWidth}px`,
-    "important"
-);
+    /*
+     * fullscreen 해제 후에는
+     * iframe을 원래 위치인 HTML로 복귀
+     */
+    if (
+        frame.parentElement !==
+        document.documentElement
+    ) {
+        document.documentElement.appendChild(
+            frame
+        );
+    }
 
     frame.style.setProperty(
         "position",
@@ -1429,13 +1883,68 @@ frame.style.setProperty(
     );
 
     frame.style.setProperty(
+        "bottom",
+        "auto",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "left",
+        "auto",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "width",
+        `${panelWidth}px`,
+        "important"
+    );
+
+    frame.style.setProperty(
         "height",
         "100vh",
         "important"
     );
 
+    frame.style.setProperty(
+        "display",
+        "block",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "visibility",
+        "visible",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "opacity",
+        "1",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "transform",
+        "translateZ(0)",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "z-index",
+        "2147483647",
+        "important"
+    );
+
+    frame.style.setProperty(
+        "pointer-events",
+        "auto",
+        "important"
+    );
+
     scheduleScaleUpdate();
 }
+
 let lastWavveFullscreenState = null;
 
 const wavveFullscreenObserver =
@@ -1469,10 +1978,41 @@ const wavveFullscreenObserver =
             isFullscreen;
 
         if (isFullscreen) {
-            updateWavveFullscreenLayout();
-        } else {
-            restoreWavveFullscreenLayout();
-        }
+    updateWavveFullscreenLayout();
+
+    if (
+        collapsedExpandButton &&
+        collapsed
+    ) {
+        container.appendChild(
+            collapsedExpandButton
+        );
+
+        collapsedExpandButton.style.setProperty(
+            "display",
+            "block",
+            "important"
+        );
+    }
+} else {
+    restoreWavveFullscreenLayout();
+
+    if (
+        collapsedExpandButton
+    ) {
+        document.body.appendChild(
+            collapsedExpandButton
+        );
+
+        collapsedExpandButton.style.setProperty(
+            "display",
+            collapsed
+                ? "block"
+                : "none",
+            "important"
+        );
+    }
+}
     });
 
 const wavveContainer =
@@ -1544,32 +2084,65 @@ inviteUrl.searchParams.set("tvpRoom", roomCode);
 }
     
             if (
-                type ===
-                "TVP_COLLAPSE"
-            ) {
-                collapsed = true;
+    type ===
+    "TVP_COLLAPSE"
+) {
+    collapsed = true;
+    panelWidth = 0;
 
-                setPanelWidth(
-                    COLLAPSED_WIDTH
-                );
-                
-                
-                return;
-            }
+    frame.style.setProperty(
+        "display",
+        "none",
+        "important"
+    );
 
-            if (
-                type ===
-                "TVP_EXPAND"
-            ) {
-                collapsed = false;
+    const button =
+        createCollapsedExpandButton();
 
-                setPanelWidth(
-                    PANEL_WIDTH
-                );
+    button.style.setProperty(
+        "display",
+        "block",
+        "important"
+    );
 
-                
-                return;
-            }
+    scheduleScaleUpdate();
+
+    return;
+}
+
+if (
+    type ===
+    "TVP_EXPAND"
+) {
+    collapsed = false;
+    panelWidth = PANEL_WIDTH;
+
+    frame.style.setProperty(
+        "width",
+        `${PANEL_WIDTH}px`,
+        "important"
+    );
+
+    frame.style.setProperty(
+        "display",
+        "block",
+        "important"
+    );
+
+    if (
+        collapsedExpandButton
+    ) {
+        collapsedExpandButton.style.setProperty(
+            "display",
+            "none",
+            "important"
+        );
+    }
+
+    scheduleScaleUpdate();
+
+    return;
+}
 
             if (
                 type ===
@@ -1673,7 +2246,13 @@ window.dispatchEvent(
     )
 );
 
-    return;
+/*
+ * 새 에피소드 로딩 완료 후
+ * 호스트 상태를 다시 받아 싱크한다.
+ */
+scheduleEpisodeResync();
+
+return;
 }
 
             if (
