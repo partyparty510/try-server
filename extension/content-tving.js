@@ -255,19 +255,17 @@ function installSeekBarFix() {
 }
 
 function installSeekHoverFix() {
+    let hoverTimeObserver = null;
+    let forcedHoverTime = null;
+
     window.addEventListener(
         "mousemove",
         (event) => {
-            /*
-             * 우리가 새로 만들어 보낸 이벤트는
-             * 다시 보정하지 않는다.
-             */
             if (!event.isTrusted) {
                 return;
             }
 
-            const player =
-                findPlayer();
+            const player = findPlayer();
 
             if (!player) {
                 return;
@@ -292,10 +290,6 @@ function installSeekHoverFix() {
                 return;
             }
 
-            /*
-             * 재생바 실제 높이는 매우 얇으므로
-             * hover 영역은 위아래로 넓게 판정
-             */
             const hitTop =
                 rect.top - 20;
 
@@ -311,13 +305,6 @@ function installSeekHoverFix() {
                 return;
             }
 
-            /*
-             * 예:
-             * 실제 보이는 폭 = 672
-             * 티빙 내부 폭 = 995
-             *
-             * scale ≈ 0.675
-             */
             const scale =
                 rect.width /
                 progressBar.offsetWidth;
@@ -330,68 +317,263 @@ function installSeekHoverFix() {
                 return;
             }
 
+            /*
+             * ★ 여기까지는 기존 정상 좌표 계산과 동일
+             */
             const visibleX =
                 event.clientX -
                 rect.left;
 
-            /*
-             * 티빙 내부 좌표계로 역보정
-             */
-            const correctedX =
-                rect.left +
+            const originalX =
                 visibleX / scale;
+const duration =
+    Number(findVideo()?.duration);
+
+const previewTime =
+    Number.isFinite(duration)
+        ? duration *
+          Math.max(
+              0,
+              Math.min(
+                  1,
+                  visibleX / rect.width
+              )
+          )
+        : null;
+
+const timePositioner =
+    progressBar.querySelector(
+        '[class*="thumbnail-time-label-positioner"]'
+    );
+
+const imagePositioner =
+    progressBar.querySelector(
+        '[class*="thumbnail-image-positioner"]'
+    );
+
+const timeLabel =
+    progressBar.querySelector(
+        "time"
+    );
+
+/*
+ * 티빙 자체 미리보기가 멈추는 구간에서는
+ * 우리가 계산한 실제 hover 위치로 계속 이동시킨다.
+ */
+if (timePositioner) {
+    timePositioner.style.setProperty(
+        "transform",
+        `translateX(${originalX}px)`,
+        "important"
+    );
+}
+
+if (imagePositioner) {
+    /*
+     * 이미지 중앙이 마우스 위치에 오도록 한다.
+     * 기존 CSS의 left:-121px가 중앙 정렬을 담당한다.
+     */
+    imagePositioner.style.setProperty(
+        "transform",
+        `translateX(${originalX}px)`,
+        "important"
+    );
+}
+
+if (
+    timeLabel &&
+    Number.isFinite(previewTime)
+) {
+    const totalSeconds =
+        Math.max(
+            0,
+            Math.floor(previewTime)
+        );
+
+    const hours =
+        Math.floor(
+            totalSeconds / 3600
+        );
+
+    const minutes =
+        Math.floor(
+            (
+                totalSeconds % 3600
+            ) / 60
+        );
+
+    const seconds =
+        totalSeconds % 60;
+
+    forcedHoverTime =
+        hours > 0
+            ? `${hours}:${String(
+                  minutes
+              ).padStart(
+                  2,
+                  "0"
+              )}:${String(
+                  seconds
+              ).padStart(
+                  2,
+                  "0"
+              )}`
+            : `${minutes}:${String(
+                  seconds
+              ).padStart(
+                  2,
+                  "0"
+              )}`;
+
+    if (
+        timeLabel.textContent !==
+        forcedHoverTime
+    ) {
+        timeLabel.textContent =
+            forcedHoverTime;
+    }
+
+    if (!hoverTimeObserver) {
+        hoverTimeObserver =
+            new MutationObserver(() => {
+                if (
+                    !forcedHoverTime ||
+                    !timeLabel.isConnected
+                ) {
+                    return;
+                }
+
+                if (
+                    timeLabel.textContent !==
+                    forcedHoverTime
+                ) {
+                    timeLabel.textContent =
+                        forcedHoverTime;
+                }
+            });
+
+        hoverTimeObserver.observe(
+            timeLabel,
+            {
+                childList: true,
+                characterData: true,
+                subtree: true
+            }
+        );
+    }
+}
+
+            const originalLeft =
+                rect.left / scale;
+
+            const correctedX =
+                originalLeft +
+                originalX;
+
+            const correctedY =
+                event.clientY /
+                scale;
 
             /*
-             * 잘못된 원래 mousemove는
-             * 티빙까지 보내지 않는다.
+             * ★ 핵심
+             *
+             * 티빙이 mousemove 처리 중
+             * getBoundingClientRect()를 확인하면
+             * transform 이전 크기를 반환한다.
+             *
+             * 그래서 correctedX가 70% 이후에도
+             * "재생바 밖"으로 판정되지 않는다.
              */
+            const nativeGetRect =
+                progressBar
+                    .getBoundingClientRect
+                    .bind(progressBar);
+
+            progressBar.getBoundingClientRect =
+                () => ({
+                    x:
+                        originalLeft,
+
+                    y:
+                        rect.top / scale,
+
+                    left:
+                        originalLeft,
+
+                    top:
+                        rect.top / scale,
+
+                    right:
+                        originalLeft +
+                        progressBar.offsetWidth,
+
+                    bottom:
+                        rect.top / scale +
+                        (
+                            rect.height /
+                            scale
+                        ),
+
+                    width:
+                        progressBar.offsetWidth,
+
+                    height:
+                        rect.height /
+                        scale,
+
+                    toJSON() {
+                        return this;
+                    }
+                });
+
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            const correctedEvent =
-                new MouseEvent(
-                    "mousemove",
-                    {
-                        bubbles: true,
-                        cancelable: true,
+            try {
+                progressBar.dispatchEvent(
+                    new MouseEvent(
+                        "mousemove",
+                        {
+                            bubbles: true,
+                            cancelable: true,
 
-                        clientX:
-                            correctedX,
+                            clientX:
+                                correctedX,
 
-                        clientY:
-                            event.clientY,
+                            clientY:
+                                correctedY,
 
-                        screenX:
-                            event.screenX,
+                            screenX:
+                                event.screenX,
 
-                        screenY:
-                            event.screenY,
+                            screenY:
+                                event.screenY,
 
-                        buttons:
-                            event.buttons,
+                            buttons:
+                                event.buttons,
 
-                        ctrlKey:
-                            event.ctrlKey,
+                            ctrlKey:
+                                event.ctrlKey,
 
-                        shiftKey:
-                            event.shiftKey,
+                            shiftKey:
+                                event.shiftKey,
 
-                        altKey:
-                            event.altKey,
+                            altKey:
+                                event.altKey,
 
-                        metaKey:
-                            event.metaKey
-                    }
+                            metaKey:
+                                event.metaKey
+                        }
+                    )
                 );
-
-            /*
-             * 티빙 원래 재생바에
-             * 보정된 마우스 이벤트 전달
-             */
-            progressBar.dispatchEvent(
-                correctedEvent
-            );
-            
+            } finally {
+                /*
+                 * 이벤트 처리 끝나면
+                 * 즉시 원래 함수 복구
+                 */
+                progressBar.getBoundingClientRect =
+                    nativeGetRect;
+            }
         },
         true
     );
@@ -456,191 +638,204 @@ function checkTvingEpisodeChange() {
         );
     }
 
-    function updatePlayerScale() {
-        const player = findPlayer();
+function updatePlayerScale() {
+    const player = findPlayer();
 
-        if (!player) {
-            return;
-        }
+    if (!player) {
+        return;
+    }
 
-        const viewportWidth =
-            document.documentElement
-                .clientWidth;
+    const viewportWidth =
+        document.documentElement.clientWidth;
 
-        const viewportHeight =
-            document.documentElement
-                .clientHeight;
+    const viewportHeight =
+        document.documentElement.clientHeight;
 
-        const availableWidth =
-            Math.max(
-                320,
-                viewportWidth -
-                    panelWidth
-            );
+    const availableWidth =
+        Math.max(
+            320,
+            viewportWidth - panelWidth
+        );
 
-        const scale = Math.min(
+    const scale =
+        Math.min(
             1,
             availableWidth /
                 viewportWidth
         );
 
-        const scaledHeight =
-            viewportHeight * scale;
+    const scaledHeight =
+        viewportHeight * scale;
 
-        const verticalOffset =
-            Math.max(
-                0,
-                (
-                    viewportHeight -
-                    scaledHeight
-                ) / 2
-            );
-
-        player.style.setProperty(
-            "position",
-            "fixed",
-            "important"
+    const verticalOffset =
+        Math.max(
+            0,
+            (
+                viewportHeight -
+                scaledHeight
+            ) / 2
         );
 
-        player.style.setProperty(
-            "top",
-            `${verticalOffset}px`,
-            "important"
-        );
+    player.style.setProperty(
+        "position",
+        "fixed",
+        "important"
+    );
 
-        player.style.setProperty(
-            "left",
-            "0",
-            "important"
-        );
+    player.style.setProperty(
+        "top",
+        `${verticalOffset}px`,
+        "important"
+    );
 
-        player.style.setProperty(
-            "right",
-            "auto",
-            "important"
-        );
+    player.style.setProperty(
+        "left",
+        "0",
+        "important"
+    );
 
-        player.style.setProperty(
-            "bottom",
-            "auto",
-            "important"
-        );
+    player.style.setProperty(
+        "right",
+        "auto",
+        "important"
+    );
 
-        player.style.setProperty(
+    player.style.setProperty(
+        "bottom",
+        "auto",
+        "important"
+    );
+
+    /*
+     * 실제 플레이어 크기는
+     * 원래 viewport 크기로 유지
+     */
+    player.style.setProperty(
+        "width",
+        `${viewportWidth}px`,
+        "important"
+    );
+
+    player.style.setProperty(
+        "height",
+        `${viewportHeight}px`,
+        "important"
+    );
+
+    player.style.setProperty(
+        "max-width",
+        "none",
+        "important"
+    );
+
+    player.style.setProperty(
+        "max-height",
+        "none",
+        "important"
+    );
+
+    player.style.setProperty(
+        "margin",
+        "0",
+        "important"
+    );
+
+    player.style.setProperty(
+        "padding",
+        "0",
+        "important"
+    );
+
+    player.style.setProperty(
+        "box-sizing",
+        "border-box",
+        "important"
+    );
+
+    player.style.setProperty(
+        "transform-origin",
+        "left top",
+        "important"
+    );
+
+    player.style.setProperty(
+        "transform",
+        `scale(${scale})`,
+        "important"
+    );
+
+    player.style.setProperty(
+        "overflow",
+        "hidden",
+        "important"
+    );
+
+    player.style.setProperty(
+        "z-index",
+        "2147483000",
+        "important"
+    );
+
+    const video = findVideo();
+
+    if (video) {
+        video.style.setProperty(
             "width",
-            `${viewportWidth}px`,
+            "100%",
             "important"
         );
 
-        player.style.setProperty(
-            "max-width",
-            "none",
-            "important"
-        );
-
-        player.style.setProperty(
+        video.style.setProperty(
             "height",
-            `${viewportHeight}px`,
+            "100%",
             "important"
         );
 
-        player.style.setProperty(
+        video.style.setProperty(
+            "max-width",
+            "100%",
+            "important"
+        );
+
+        video.style.setProperty(
             "max-height",
-            "none",
+            "100%",
             "important"
         );
 
-        player.style.setProperty(
-            "margin",
-            "0",
+        video.style.setProperty(
+            "object-fit",
+            "contain",
             "important"
         );
 
-        player.style.setProperty(
-            "padding",
-            "0",
+        video.style.setProperty(
+            "object-position",
+            "center center",
             "important"
         );
-
-        player.style.setProperty(
-            "box-sizing",
-            "border-box",
-            "important"
-        );
-
-        player.style.setProperty(
-            "transform-origin",
-            "left top",
-            "important"
-        );
-
-        player.style.setProperty(
-            "transform",
-            `scale(${scale})`,
-            "important"
-        );
-
-        player.style.setProperty(
-            "overflow",
-            "hidden",
-            "important"
-        );
-
-        player.style.setProperty(
-            "z-index",
-            "2147483000",
-            "important"
-        );
-
-        const video = findVideo();
-
-        if (video) {
-            video.style.setProperty(
-                "width",
-                "100%",
-                "important"
-            );
-
-            video.style.setProperty(
-                "height",
-                "100%",
-                "important"
-            );
-
-            video.style.setProperty(
-                "max-width",
-                "100%",
-                "important"
-            );
-
-            video.style.setProperty(
-                "max-height",
-                "100%",
-                "important"
-            );
-
-            video.style.setProperty(
-                "object-fit",
-                "contain",
-                "important"
-            );
-
-            video.style.setProperty(
-                "object-position",
-                "center center",
-                "important"
-            );
-        }
     }
+}
 
     function scheduleScaleUpdate() {
-        clearTimeout(updateTimer);
+    clearTimeout(updateTimer);
 
-        updateTimer = setTimeout(
+    updatePlayerScale();
+
+    updateTimer = setTimeout(() => {
+        updatePlayerScale();
+
+        setTimeout(
             updatePlayerScale,
-            50
+            150
         );
-    }
+
+        setTimeout(
+            updatePlayerScale,
+            300
+        );
+    }, 50);
+}
 
     function setPanelWidth(width) {
         panelWidth = width;

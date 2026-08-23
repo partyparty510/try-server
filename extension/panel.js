@@ -386,6 +386,21 @@ currentNickname = nickname;
 currentNicknameDisplay.textContent =
     currentNickname;
 
+    sessionStorage.setItem(
+    "tvpRoomCode",
+    currentRoom
+);
+
+sessionStorage.setItem(
+    "tvpNickname",
+    currentNickname
+);
+
+sessionStorage.setItem(
+    "tvpWasHost",
+    isHost ? "true" : "false"
+);
+
         showRoomScreen();
     
                 window.parent.postMessage(
@@ -404,6 +419,78 @@ currentNicknameDisplay.textContent =
 
         messageInput.focus();
     }
+
+    function rejoinSavedRoom(roomCode) {
+    const savedRoom =
+        sessionStorage.getItem(
+            "tvpRoomCode"
+        );
+
+    const savedNickname =
+        sessionStorage.getItem(
+            "tvpNickname"
+        );
+
+    const savedWasHost =
+        sessionStorage.getItem(
+            "tvpWasHost"
+        ) === "true";
+
+    const room =
+        String(
+            roomCode ||
+            savedRoom ||
+            ""
+        )
+            .trim()
+            .toUpperCase();
+
+    const nickname =
+        String(
+            savedNickname || ""
+        ).trim();
+
+    if (
+        !room ||
+        !nickname ||
+        !socket?.connected
+    ) {
+        return false;
+    }
+
+    socket.emit(
+        "join room",
+        {
+            roomCode: room,
+            nickname
+        },
+        (response) => {
+            if (
+                response &&
+                response.success === false
+            ) {
+                console.warn(
+                    "TVP 자동 재참가 실패:",
+                    response.message
+                );
+
+                return;
+            }
+
+            enterRoom(
+                response?.roomCode || room,
+                nickname,
+                savedWasHost ||
+                    Boolean(
+                        response?.isHost
+                    ),
+                response?.roomTitle || ""
+            );
+        }
+    );
+
+    return true;
+}
 
 function joinRoom() {
     const room =
@@ -966,7 +1053,7 @@ if (type === "TVP_LOCAL_EPISODE_CHANGE") {
         }
     }
 
-    if (
+if (
     type ===
     "TVP_INVITE_ROOM_FOUND"
 ) {
@@ -980,10 +1067,45 @@ if (type === "TVP_LOCAL_EPISODE_CHANGE") {
     roomInput.value =
         inviteRoomCode;
 
+    const savedRoom =
+        String(
+            sessionStorage.getItem(
+                "tvpRoomCode"
+            ) || ""
+        )
+            .trim()
+            .toUpperCase();
+
+    const savedNickname =
+        String(
+            sessionStorage.getItem(
+                "tvpNickname"
+            ) || ""
+        ).trim();
+
+    if (
+        savedRoom === inviteRoomCode &&
+        savedNickname
+    ) {
+        if (socket?.connected) {
+            rejoinSavedRoom(
+                inviteRoomCode
+            );
+        } else {
+            socket.once(
+                "connect",
+                () => {
+                    rejoinSavedRoom(
+                        inviteRoomCode
+                    );
+                }
+            );
+        }
+    }
+
     return;
 }
-
-
+    
 });
 
 showJoinScreen();
