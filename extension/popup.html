@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>TVP</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 12px;
+            width: 190px;
+            background: #171717;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+
+        .title {
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        #reload-button {
+            width: 100%;
+            padding: 9px 10px;
+
+            border: 0;
+            border-radius: 7px;
+
+            background: #292929;
+            color: #ffffff;
+
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #reload-button:hover {
+            background: #383838;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title">
+        TVP
+    </div>
+
+    <button
+        id="reload-button"
+        type="button"
+    >
+        ↻ 확장프로그램 새로고침
+    </button>
+
+    <script src="popup.js"></script>
+</body>
+</html>

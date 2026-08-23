@@ -4,6 +4,22 @@
     "version": "1.0.0",
     "description": "TVING & WAVVE Watch Party",
 
+    "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+},
+
+"action": {
+    "default_icon": {
+        "16": "icon.png",
+        "32": "icon.png"
+    },
+    "default_popup": "popup.html",
+    "default_title": "TVP"
+},
+
     "permissions": [
         "storage",
         "activeTab"
