@@ -386,6 +386,9 @@ currentNickname = nickname;
 currentNicknameDisplay.textContent =
     currentNickname;
 
+    roomTitle.textContent =
+    title || currentRoom || "-";
+    
     sessionStorage.setItem(
     "tvpRoomCode",
     currentRoom
