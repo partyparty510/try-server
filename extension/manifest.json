@@ -29,7 +29,8 @@
         "https://www.tving.com/*",
         "https://www.wavve.com/*",
         "http://localhost:3000/*",
-        "https://try-server-5rp4.onrender.com/*"
+        "https://try-server-5rp4.onrender.com/*",
+        "https://test-server-wp3c.onrender.com/*"
     ],
 
     "content_scripts": [

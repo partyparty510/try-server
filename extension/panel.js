@@ -7,7 +7,7 @@
     }
 
 const DEFAULT_SERVER_URL =
-"https://try-server-5rp4.onrender.com";
+    "https://try-server-5rp4.onrender.com";
 
 
 
@@ -388,7 +388,7 @@ currentNicknameDisplay.textContent =
 
     roomTitle.textContent =
     title || currentRoom || "-";
-    
+
     sessionStorage.setItem(
     "tvpRoomCode",
     currentRoom
@@ -433,7 +433,7 @@ sessionStorage.setItem(
         sessionStorage.getItem(
             "tvpNickname"
         );
-
+ 
     const savedWasHost =
         sessionStorage.getItem(
             "tvpWasHost"
@@ -1139,6 +1139,22 @@ window.parent.postMessage(
         type: "TVP_REQUEST_INVITE_ROOM"
     },
     "*"
+);
+
+const feedbackButton =
+    document.getElementById(
+        "tvp-feedback-button"
+    );
+
+feedbackButton?.addEventListener(
+    "click",
+    () => {
+        window.open(
+            "https://asked.kr/TVP_",
+            "tvp-feedback",
+            "width=700,height=800,resizable=yes,scrollbars=yes"
+        );
+    }
 );
 
 })();

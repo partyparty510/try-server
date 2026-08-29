@@ -984,7 +984,7 @@ const adjustedDifference =
 
 if (
     action === "seek" ||
-    adjustedDifference > 0.25
+    adjustedDifference > 3
 ) {
 try {
     const requestedTime =

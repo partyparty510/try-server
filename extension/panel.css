@@ -410,7 +410,7 @@ body.tvp-collapsed .tvp-expand-button {
 }
 
 .tvp-form-input:focus {
-    border-color: #7659e8;
+    border-color: #123478;
 }
 
 .tvp-primary-button,
@@ -828,4 +828,41 @@ body.tvp-collapsed .tvp-expand-button {
 
 [hidden] {
     display: none !important;
+}
+
+#chat-section {
+    overflow-x: hidden;
+}
+
+.tvp-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tvp-feedback-button {
+    height: 20px;
+    padding: 0 5px;
+
+    border: 1px solid #123478;
+    border-radius: 4px;
+
+    background: #123478;
+    color: #ffffff;
+
+    font: inherit;
+    font-size: inherit;
+    line-height: 1;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+}
+
+.tvp-feedback-button:hover {
+    background: #ffffff;
+    color: #123478;
+    border-color: #123478;
 }

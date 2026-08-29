@@ -353,6 +353,11 @@ const imagePositioner =
         '[class*="thumbnail-image-positioner"]'
     );
 
+const previewImage =
+    imagePositioner?.querySelector(
+        'img[alt="영상 미리보기 이미지"]'
+    );
+
 const timeLabel =
     progressBar.querySelector(
         "time"
@@ -378,6 +383,62 @@ if (imagePositioner) {
     imagePositioner.style.setProperty(
         "transform",
         `translateX(${originalX}px)`,
+        "important"
+    );
+}
+
+if (
+    previewImage &&
+    previewImage.naturalWidth > 0 &&
+    previewImage.naturalHeight > 0
+) {
+    const frameWidth = 242;
+    const frameHeight = 136;
+
+    const columns =
+        Math.floor(
+            previewImage.naturalWidth /
+            frameWidth
+        );
+
+    const rows =
+        Math.floor(
+            previewImage.naturalHeight /
+            frameHeight
+        );
+
+    const totalFrames =
+        columns * rows;
+
+    const hoverRatio =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                visibleX / rect.width
+            )
+        );
+
+    const frameIndex =
+        Math.min(
+            totalFrames - 1,
+            Math.floor(
+                hoverRatio *
+                totalFrames
+            )
+        );
+
+    const column =
+        frameIndex % columns;
+
+    const row =
+        Math.floor(
+            frameIndex / columns
+        );
+
+    previewImage.style.setProperty(
+        "transform",
+        `translate(${-column * frameWidth}px, ${-row * frameHeight}px) scale(1)`,
         "important"
     );
 }
@@ -1081,7 +1142,7 @@ const adjustedDifference =
 
 if (
     action === "seek" ||
-    adjustedDifference > 0.25
+    adjustedDifference > 3
 ) {
     try {
         video.currentTime =
