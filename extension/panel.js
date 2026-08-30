@@ -75,12 +75,11 @@ const replyCancelButton =
     const expandButton = document.getElementById("tvp-expand-button");
     const closeButton = document.getElementById("tvp-close-button");
 
-let socket;
-let currentRoom = "";
-let currentNickname = "";
-let inviteRoomCode = "";
-let currentReplyTo = null;
-let pendingDisconnectReport = null;
+    let socket;
+    let currentRoom = "";
+    let currentNickname = "";
+    let inviteRoomCode = "";
+    let currentReplyTo = null;
 
     function showJoinScreen() {
         joinSection.hidden = false;
@@ -666,18 +665,8 @@ socket = io(serverUrl, {
 });
 
     socket.on("connect", () => {
-    setStatus("서버 연결됨");
-
-    if (pendingDisconnectReport) {
-        socket.emit(
-            "client disconnect report",
-            pendingDisconnectReport
-        );
-
-        pendingDisconnectReport =
-            null;
-    }
-});
+        setStatus("서버 연결됨");
+    });
 
     socket.on("connect_error", (error) => {
         console.error(error);
@@ -688,38 +677,9 @@ socket = io(serverUrl, {
         );
     });
 
-    socket.on(
-    "disconnect",
-    (reason) => {
-        setStatus(
-            "서버 연결 끊김",
-            true
-        );
-
-        pendingDisconnectReport = {
-            reason:
-                String(
-                    reason || "unknown"
-                ),
-            roomCode:
-                currentRoom,
-            nickname:
-                currentNickname,
-            service:
-                location.ancestorOrigins?.[0]
-                    ?.includes(
-                        "wavve.com"
-                    )
-                    ? "WAVVE"
-                    : location.ancestorOrigins?.[0]
-                        ?.includes(
-                            "tving.com"
-                        )
-                        ? "TVING"
-                        : "UNKNOWN"
-        };
-    }
-);
+    socket.on("disconnect", () => {
+        setStatus("서버 연결 끊김", true);
+    });
 
 function handleParticipantList(
     participants

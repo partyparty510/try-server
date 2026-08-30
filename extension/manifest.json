@@ -26,33 +26,55 @@
     ],
 
     "host_permissions": [
-        "https://www.tving.com/*",
-        "https://www.wavve.com/*",
-        "http://localhost:3000/*",
-        "https://try-server-5rp4.onrender.com/*",
-        "https://test-server-wp3c.onrender.com/*"
-    ],
+    "https://www.tving.com/*",
+    "https://www.wavve.com/*",
+    "https://www.disneyplus.com/*",
+    "http://localhost:3000/*",
+    "https://try-server-5rp4.onrender.com/*",
+    "https://test-server-wp3c.onrender.com/*"
+],
 
     "content_scripts": [
-        {
-            "matches": [
-                "https://www.tving.com/*"
-            ],
-            "js": [
-                "content-tving.js"
-            ],
-            "run_at": "document_idle"
-        },
-        {
-            "matches": [
-                "https://www.wavve.com/*"
-            ],
-            "js": [
-                "content-wavve.js"
-            ],
-            "run_at": "document_idle"
-        }
+    {
+        "matches": [
+            "https://www.tving.com/*"
+        ],
+        "js": [
+            "content-tving.js"
+        ],
+        "run_at": "document_idle"
+    },
+    {
+        "matches": [
+            "https://www.wavve.com/*"
+        ],
+        "js": [
+            "content-wavve.js"
+        ],
+        "run_at": "document_idle"
+    },
+
+    {
+    "matches": [
+        "https://www.disneyplus.com/*"
     ],
+    "js": [
+        "disney-main.js"
+    ],
+    "run_at": "document_start",
+    "world": "MAIN"
+},
+
+    {
+        "matches": [
+            "https://www.disneyplus.com/*"
+        ],
+        "js": [
+            "content-disney.js"
+        ],
+        "run_at": "document_idle"
+    }
+],
 
     "web_accessible_resources": [
         {
@@ -64,7 +86,8 @@
             ],
             "matches": [
                 "https://www.tving.com/*",
-                "https://www.wavve.com/*"
+                "https://www.wavve.com/*",
+                "https://www.disneyplus.com/*"
             ]
         }
     ]

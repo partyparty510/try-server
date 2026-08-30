@@ -3,6 +3,10 @@
         "tvp-panel-frame";
 
     const PANEL_WIDTH = 360;
+
+    
+
+    
     const COLLAPSED_WIDTH = 48;
 
     let frame = null;
@@ -13,6 +17,95 @@ let collapsedExpandButton = null;
 
     let currentVideo = null;
     let isHost = false;
+    let userSeekPending = false;
+
+    let lastDisneySeekPointerAt = 0;
+
+    let disneyPlayheadCurrentTime =
+    null;
+
+let disneyPlayheadRequestId =
+    0;
+let disneyPlayheadResponseId =
+    0;
+
+    window.addEventListener(
+    "message",
+    (event) => {
+        if (
+            event.source !== window
+        ) {
+            return;
+        }
+
+        if (
+            event.data?.type !==
+            "TVP_DISNEY_USER_SEEK"
+        ) {
+            return;
+        }
+
+        
+        handleDisneyUserSeek(
+            event.data.currentTime
+        );
+    }
+);
+
+window.addEventListener(
+    "message",
+    (event) => {
+        if (
+            event.source !== window
+        ) {
+            return;
+        }
+
+        if (
+            event.data?.type !==
+            "TVP_DISNEY_PLAYHEAD_RESPONSE"
+        ) {
+            return;
+        }
+
+        const currentTime =
+            Number(
+                event.data.currentTime
+            );
+
+        if (
+            !Number.isFinite(
+                currentTime
+            )
+        ) {
+            return;
+        }
+
+        disneyPlayheadCurrentTime =
+            currentTime;
+        disneyPlayheadResponseId =
+    Number(
+        event.data.requestId
+    ) || 0;    
+    }
+);
+
+function requestDisneyPlayhead() {
+    disneyPlayheadRequestId += 1;
+
+    window.postMessage(
+        {
+            type:
+                "TVP_DISNEY_REQUEST_PLAYHEAD",
+
+            requestId:
+                disneyPlayheadRequestId
+        },
+        "*"
+    );
+}
+
+
 
     /*
      * 서버에서 받은 명령을 영상에 적용할 때
@@ -96,19 +189,29 @@ let episodeResyncStartedAt = 0;
     restorePreviousChanges();
 
 function findPlayer() {
-    return (
-        document.querySelector(
-            ".play-container"
-        ) ||
-        document.querySelector(
-            ".player_container"
-        )
+    return document.querySelector(
+        ".player-container-root"
     );
 }
 
 function findVideo() {
-    return document.querySelector(
-        'video[id^="wavve"]:not([id^="wavve_midroll"])'
+    const videos =
+        Array.from(
+            document.querySelectorAll(
+                "video"
+            )
+        );
+
+    return (
+        videos.find(
+            (video) =>
+                video.id.startsWith(
+                    "hivePlayer"
+                ) &&
+                video.getBoundingClientRect()
+                    .width > 0
+        ) ||
+        null
     );
 }
 
@@ -195,12 +298,15 @@ function installSeekBarFix() {
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            suppressUntil =
+                        suppressUntil =
                 Date.now() + 500;
+
+            userSeekPending = true;
 
             try {
                 seekInfo.video.currentTime =
                     seekInfo.targetTime;
+
             } catch (error) {
                 console.warn(
                     "TVP 재생바 이동 실패:",
@@ -451,45 +557,18 @@ console.log(
 }
 
     function postToPanel(message) {
-    console.log(
-        "[TVP WAVVE] postToPanel",
-        message?.type,
-        {
-            frameExists: Boolean(frame),
-            frameConnected:
-                Boolean(frame?.isConnected),
-            hasContentWindow:
-                Boolean(frame?.contentWindow),
-            message
-        }
-    );
-
     frame?.contentWindow?.postMessage(
         message,
         "*"
     );
 }
+function updatePlayerScale() {
+    const player = findPlayer();
 
-    function updatePlayerScale() {
-        const player = findPlayer();
+    if (!player) {
+        return;
+    }
 
-        if (!player) {
-            return;
-        }
-
-        const wavveContainer =
-    document.getElementById(
-        "container"
-    );
-
-if (
-    wavveContainer?.classList.contains(
-        "fullscreen"
-    )
-) {
-    updateWavveFullscreenLayout();
-    return;
-}
 
 const container =
     document.getElementById(
@@ -690,51 +769,104 @@ const viewportHeight =
     }
 
 
+async function getPlayerState(
+    action = "sync"
+) {
+    const video =
+        findVideo();
 
-    function getPlayerState(
-        action = "sync"
+    if (!video) {
+        return null;
+    }
+
+    requestDisneyPlayhead();
+
+    const requestedId =
+        disneyPlayheadRequestId;
+
+    await new Promise(
+        (resolve) => {
+            const startedAt =
+                Date.now();
+
+            const check =
+                () => {
+                    if (
+                        disneyPlayheadResponseId ===
+                        requestedId
+                    ) {
+                        resolve();
+                        return;
+                    }
+
+                    if (
+                        Date.now() -
+                            startedAt >=
+                        300
+                    ) {
+                        resolve();
+                        return;
+                    }
+
+                    setTimeout(
+                        check,
+                        10
+                    );
+                };
+
+            check();
+        }
+    );
+
+    const currentTime =
+        Number.isFinite(
+            disneyPlayheadCurrentTime
+        )
+            ? disneyPlayheadCurrentTime
+            : Number(
+                video.currentTime
+            ) || 0;
+
+    return {
+        action,
+        currentTime,
+        paused:
+            video.paused,
+        playbackRate:
+            Number(
+                video.playbackRate
+            ) || 1,
+        sentAt:
+            Date.now()
+    };
+}
+
+ async function emitHostPlayerEvent(
+    action
+) {
+    if (
+        !isHost ||
+        applyingRemoteEvent
     ) {
-        const video = findVideo();
-
-        if (!video) {
-            return null;
-        }
-
-        return {
-            action,
-            currentTime:
-                Number(video.currentTime) ||
-                0,
-            paused: video.paused,
-            playbackRate:
-                Number(
-                    video.playbackRate
-                ) || 1,
-            sentAt: Date.now()
-        };
+        return;
     }
 
-    function emitHostPlayerEvent(action) {
-        if (
-            !isHost ||
-            applyingRemoteEvent
-        ) {
-            return;
-        }
+    const state =
+        await getPlayerState(
+            action
+        );
 
-        const state =
-            getPlayerState(action);
-
-        if (!state) {
-            return;
-        }
-
-        postToPanel({
-            type:
-                "TVP_LOCAL_PLAYER_EVENT",
-            data: state
-        });
+    if (!state) {
+        return;
     }
+
+    postToPanel({
+        type:
+            "TVP_LOCAL_PLAYER_EVENT",
+        data:
+            state
+    });
+}
 
 function handleVideoPlay() {
     emitHostPlayerEvent("play");
@@ -754,30 +886,84 @@ function handleVideoPause() {
     });
 }
 
-function handleVideoSeeked() {
-    emitHostPlayerEvent("seek");
+function handleDisneyUserSeek(
+    currentTime
+) {
+    if (!isHost) {
+        return;
+    }
 
-    const video = currentVideo;
-
-    if (video) {
-        const seconds = Math.floor(
-            video.currentTime
+    const targetTime =
+        Number(
+            currentTime
         );
 
-        const min = Math.floor(
+    if (
+        !Number.isFinite(
+            targetTime
+        )
+    ) {
+        return;
+    }
+
+    const video =
+        findVideo();
+
+    const state = {
+        action:
+            "seek",
+
+        currentTime:
+            targetTime,
+
+        paused:
+            video
+                ? video.paused
+                : false,
+
+        playbackRate:
+            video
+                ? video.playbackRate
+                : 1,
+
+        sentAt:
+            Date.now()
+    };
+
+    
+    postToPanel({
+        type:
+            "TVP_LOCAL_PLAYER_EVENT",
+
+        data:
+            state
+    });
+
+    const seconds =
+        Math.floor(
+            targetTime
+        );
+
+    const min =
+        Math.floor(
             seconds / 60
         );
 
-        const sec = String(
+    const sec =
+        String(
             seconds % 60
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
-        postToPanel({
-            type: "TVP_SYSTEM_MESSAGE",
-            message:
-                `${min}:${sec}로 이동`
-        });
-    }
+    postToPanel({
+        type:
+            "TVP_SYSTEM_MESSAGE",
+
+        message:
+            `${min}:${sec}로 이동`
+    });
 }
 
     function detachVideoEvents() {
@@ -793,11 +979,6 @@ function handleVideoSeeked() {
         currentVideo.removeEventListener(
             "pause",
             handleVideoPause
-        );
-
-        currentVideo.removeEventListener(
-            "seeked",
-            handleVideoSeeked
         );
 
         currentVideo = null;
@@ -827,10 +1008,7 @@ function handleVideoSeeked() {
             handleVideoPause
         );
 
-        currentVideo.addEventListener(
-            "seeked",
-            handleVideoSeeked
-        );
+        
     }
 
     function beginRemoteApplication() {
@@ -915,6 +1093,11 @@ function handleVideoSeeked() {
     async function applyPlayerEvent(
         data
     ) {
+            console.log(
+        "[TVP DISNEY] APPLY_PLAYER_EVENT:",
+        data
+    );
+
         const video = findVideo();
 
         if (!video || !data) {
@@ -984,42 +1167,24 @@ const adjustedDifference =
 
 if (
     action === "seek" ||
-    adjustedDifference > 3
+    action === "sync"
 ) {
-try {
     const requestedTime =
         Math.max(
             0,
             adjustedTime
         );
 
-    video.currentTime =
-        requestedTime;
-
-    setTimeout(() => {
-
-
-
-
-    console.log(
-        "[TVP WAVVE SYNC CHECK]",
+    window.postMessage(
         {
-            requestedTime,
-            actualTime:
-                video.currentTime,
-            difference:
-                video.currentTime -
-                requestedTime
-        }
-    );
-}, 500);
+            type:
+                "TVP_DISNEY_APPLY_SEEK",
 
-    } catch (error) {
-        console.warn(
-            "TVP 시간 이동 실패:",
-            error
-        );
-    }
+            currentTime:
+                requestedTime
+        },
+        "*"
+    );
 }
 
         if (
@@ -1036,31 +1201,41 @@ try {
         }
 
         if (
-            action === "pause" ||
-            data.paused
-        ) {
-            video.pause();
-            return;
-        }
+    action === "pause" ||
+    data.paused === true
+) {
+    window.postMessage(
+        {
+            type:
+                "TVP_DISNEY_APPLY_PLAYBACK",
+            paused:
+                true
+        },
+        "*"
+    );
 
-        if (
-            action === "play" ||
-            action === "sync"
-        ) {
-            try {
-                await video.play();
-            } catch (error) {
-                console.warn(
-                    "TVP 재생 실패:",
-                    error
-                );
+    return;
+}
 
-                postToPanel({
-                    type:
-                        "TVP_AUTOPLAY_BLOCKED"
-                });
-            }
-        }
+if (
+    action === "play" ||
+    (
+        action === "sync" &&
+        data.paused === false
+    )
+) {
+    window.postMessage(
+        {
+            type:
+                "TVP_DISNEY_APPLY_PLAYBACK",
+            paused:
+                false
+        },
+        "*"
+    );
+
+    return;
+}
     }
 
     function startPeriodicSync() {
@@ -1401,21 +1576,15 @@ return button;
     }
 
     function createPanel() {
-    const video =
-        findVideo();
-
-    if (
-        frame ||
-        document.getElementById(
-            FRAME_ID
-        ) ||
-        !video ||
-        !window.location.pathname.startsWith(
-            "/player/stream/vod"
-        )
-    ) {
-        return;
-    }
+        if (
+            frame ||
+            document.getElementById(
+                FRAME_ID
+            ) ||
+            !findVideo()
+        ) {
+            return;
+        }
 
         frame =
             document.createElement(
@@ -1602,34 +1771,36 @@ document.documentElement.appendChild(
 const observer =
     new MutationObserver(() => {
         checkWavveEpisodeChange();
-        if (findVideo()) {
-            createPanel();
-            attachVideoEvents();
 
-            if (
-    document
-        .getElementById("container")
-        ?.classList.contains(
-            "fullscreen"
-        )
-) {
-                frame?.style.setProperty(
-                    "display",
-                    "block",
-                    "important"
-                );
-            }
+        const video =
+            findVideo();
 
-       } else if (
-    frame &&
-    !window.location.pathname.startsWith(
-        "/player/stream/vod"
-    )
-) {
-    removePanel();
-}
+        if (!video) {
+            return;
+        }
+
+        createPanel();
+
+        const videoChanged =
+            video !== currentVideo;
+
+        attachVideoEvents();
+
+        if (videoChanged) {
+            requestAnimationFrame(
+                () => {
+                    updatePlayerScale();
+
+                    if (
+                        document.fullscreenElement ===
+                            document.documentElement
+                    ) {
+                        updateDisneyFullscreenLayout();
+                    }
+                }
+            );
+        }
     });
-
     observer.observe(
         document.documentElement,
         {
@@ -1644,6 +1815,89 @@ const observer =
         "resize",
         scheduleScaleUpdate
     );
+
+function updateDisneyFullscreenLayout() {
+    const fullscreenElement =
+        document.fullscreenElement;
+
+    if (!fullscreenElement) {
+        return;
+    }
+
+    const webPlayer =
+        fullscreenElement.querySelector(
+            "disney-web-player"
+        );
+
+    const playerUi =
+        fullscreenElement.querySelector(
+            "disney-web-player-ui"
+        );
+
+    const mediaClient =
+        fullscreenElement.querySelector(
+            ".btm-media-client"
+        );
+
+    const mediaElement =
+        fullscreenElement.querySelector(
+            ".btm-media-client-element"
+        );
+
+    const controlsOverlay =
+        fullscreenElement.querySelector(
+            "main-app-controls-overlay"
+        );
+
+    [
+        webPlayer,
+        playerUi,
+        mediaClient,
+        mediaElement,
+        controlsOverlay
+    ]
+        .filter(Boolean)
+        .forEach((element) => {
+            element.style.setProperty(
+                "width",
+                "100%",
+                "important"
+            );
+
+            element.style.setProperty(
+                "max-width",
+                "100%",
+                "important"
+            );
+
+            element.style.setProperty(
+                "left",
+                "0",
+                "important"
+            );
+
+            element.style.setProperty(
+                "right",
+                "auto",
+                "important"
+            );
+        });
+}
+
+document.addEventListener(
+    "fullscreenchange",
+    () => {
+        if (
+            document.fullscreenElement
+        ) {
+            requestAnimationFrame(
+                () => {
+                    updateDisneyFullscreenLayout();
+                }
+            );
+        }
+    }
+);
 
 function updateWavveFullscreenLayout() {
     if (!frame) {
@@ -2236,49 +2490,45 @@ if (
 const nextUrl =
     targetUrl.toString();
 
-history.pushState(
-    {},
-    "",
+if (
+    window.location.href ===
     nextUrl
-);
+) {
+    scheduleEpisodeResync();
+    return;
+}
 
-window.dispatchEvent(
-    new PopStateEvent(
-        "popstate",
-        {
-            state:
-                history.state
-        }
-    )
-);
-
-/*
- * 새 에피소드 로딩 완료 후
- * 호스트 상태를 다시 받아 싱크한다.
- */
-scheduleEpisodeResync();
+window.location.href =
+    nextUrl;
 
 return;
 }
 
-            if (
-                type ===
-                "TVP_REQUEST_PLAYER_STATE"
-            ) {
-                const state =
-                    getPlayerState(
-                        "sync"
-                    );
 
-                postToPanel({
-                    type:
-                        "TVP_PLAYER_STATE_RESPONSE",
-                    requestId:
-                        event.data
-                            .requestId,
-                    state
-                });
-            }
+            if (
+    type ===
+    "TVP_REQUEST_PLAYER_STATE"
+) {
+    const state =
+    await getPlayerState(
+        "sync"
+    );
+
+    if (!state) {
+        return;
+    }
+
+    postToPanel({
+        type:
+            "TVP_PLAYER_STATE_RESPONSE",
+        requestId:
+            event.data
+                .requestId,
+        state
+    });
+
+    return;
+}
         }
     );
 
@@ -2310,7 +2560,9 @@ return;
         }
     );
 
-installSeekBarFix();
+// installSeekBarFix();
 installSeekHoverFix();
 createPanel();
+
+
 })();
