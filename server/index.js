@@ -97,12 +97,7 @@ async function sendDiscordErrorLog(
     }
 }
 
-sendDiscordErrorLog({
-    service: "TEST",
-    nickname: "테스트",
-    roomCode: "TEST",
-    reason: "manual test"
-});
+
 
 /*
 rooms 구조
