@@ -75,11 +75,12 @@ const replyCancelButton =
     const expandButton = document.getElementById("tvp-expand-button");
     const closeButton = document.getElementById("tvp-close-button");
 
-    let socket;
-    let currentRoom = "";
-    let currentNickname = "";
-    let inviteRoomCode = "";
-    let currentReplyTo = null;
+let socket;
+let currentRoom = "";
+let currentNickname = "";
+let inviteRoomCode = "";
+let currentReplyTo = null;
+let pendingDisconnectReport = null;
 
     function showJoinScreen() {
         joinSection.hidden = false;
@@ -665,8 +666,18 @@ socket = io(serverUrl, {
 });
 
     socket.on("connect", () => {
-        setStatus("서버 연결됨");
-    });
+    setStatus("서버 연결됨");
+
+    if (pendingDisconnectReport) {
+        socket.emit(
+            "client disconnect report",
+            pendingDisconnectReport
+        );
+
+        pendingDisconnectReport =
+            null;
+    }
+});
 
     socket.on("connect_error", (error) => {
         console.error(error);
@@ -677,13 +688,98 @@ socket = io(serverUrl, {
         );
     });
 
-    socket.on("disconnect", () => {
-        setStatus("서버 연결 끊김", true);
-    });
+    socket.on(
+    "disconnect",
+    (reason) => {
+        setStatus(
+            "서버 연결 끊김",
+            true
+        );
 
-    socket.on("participant list", renderParticipants);
-    socket.on("participants", renderParticipants);
+        pendingDisconnectReport = {
+            reason:
+                String(
+                    reason || "unknown"
+                ),
+            roomCode:
+                currentRoom,
+            nickname:
+                currentNickname,
+            service:
+                location.ancestorOrigins?.[0]
+                    ?.includes(
+                        "wavve.com"
+                    )
+                    ? "WAVVE"
+                    : location.ancestorOrigins?.[0]
+                        ?.includes(
+                            "tving.com"
+                        )
+                        ? "TVING"
+                        : "UNKNOWN"
+        };
+    }
+);
 
+function handleParticipantList(
+    participants
+) {
+    renderParticipants(
+        participants
+    );
+
+    if (
+        !Array.isArray(
+            participants
+        ) ||
+        !socket?.id
+    ) {
+        return;
+    }
+
+    const me =
+        participants.find(
+            (participant) =>
+                participant.socketId ===
+                socket.id
+        );
+
+    if (!me) {
+        return;
+    }
+
+    const amIHost =
+        Boolean(
+            me.isHost
+        );
+
+    sessionStorage.setItem(
+        "tvpWasHost",
+        amIHost
+            ? "true"
+            : "false"
+    );
+
+    window.parent.postMessage(
+        {
+            type:
+                "TVP_SET_HOST_STATUS",
+            isHost:
+                amIHost
+        },
+        "*"
+    );
+}
+
+socket.on(
+    "participant list",
+    handleParticipantList
+);
+
+socket.on(
+    "participants",
+    handleParticipantList
+);
 
     socket.on("chat message", showChatMessage);
 

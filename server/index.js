@@ -14,6 +14,96 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 
+const DISCORD_WEBHOOK_URL =
+    process.env.DISCORD_WEBHOOK_URL || "";
+
+async function sendDiscordErrorLog(
+    data
+) {
+    if (!DISCORD_WEBHOOK_URL) {
+        console.warn(
+            "⚠️ DISCORD_WEBHOOK_URL이 설정되지 않았습니다."
+        );
+
+        return;
+    }
+
+    const occurredAt =
+        new Date().toLocaleString(
+            "ko-KR",
+            {
+                timeZone:
+                    "Asia/Seoul"
+            }
+        );
+
+    const service =
+        String(
+            data?.service || "UNKNOWN"
+        );
+
+    const nickname =
+        String(
+            data?.nickname || "알 수 없음"
+        );
+
+    const roomCode =
+        String(
+            data?.roomCode || "-"
+        );
+
+    const reason =
+        String(
+            data?.reason || "unknown"
+        );
+
+    try {
+        const response =
+            await fetch(
+                DISCORD_WEBHOOK_URL,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body:
+                        JSON.stringify({
+                            content:
+                                [
+                                    "🚨 **TVP 연결 오류**",
+                                    `시간: ${occurredAt}`,
+                                    `서비스: ${service}`,
+                                    `닉네임: ${nickname}`,
+                                    `방: ${roomCode}`,
+                                    `오류: ${reason}`
+                                ].join("\n")
+                        })
+                }
+            );
+
+        if (!response.ok) {
+            console.error(
+                "❌ Discord 오류 알림 전송 실패:",
+                response.status,
+                response.statusText
+            );
+        }
+    } catch (error) {
+        console.error(
+            "❌ Discord Webhook 오류:",
+            error
+        );
+    }
+}
+
+sendDiscordErrorLog({
+    service: "TEST",
+    nickname: "테스트",
+    roomCode: "TEST",
+    reason: "manual test"
+});
+
 /*
 rooms 구조
 
@@ -683,7 +773,7 @@ socket.on(
                 return;
             }
 
-            io.to(targetSocketId).emit(
+                        io.to(targetSocketId).emit(
                 "player event",
                 {
                     action: "sync",
@@ -698,6 +788,27 @@ socket.on(
                     sentAt: Date.now()
                 }
             );
+        }
+    );
+
+    /*
+     * 클라이언트 연결 오류 보고
+     */
+    socket.on(
+        "client disconnect report",
+        (data) => {
+            sendDiscordErrorLog({
+                service:
+                    data?.service,
+                nickname:
+                    data?.nickname ||
+                    socket.data.nickname,
+                roomCode:
+                    data?.roomCode ||
+                    socket.data.roomCode,
+                reason:
+                    data?.reason
+            });
         }
     );
 
